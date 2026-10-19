@@ -1,0 +1,26 @@
+# Dependencies and build output
+node_modules/
+dist/
+.netlify/
+
+# Secrets and local configuration — never commit these
+.env
+.env.*
+!.env.example
+
+# Test output
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Local-only email captures from the mock provider (may contain test data)
+.mock-mail/
+
+# Logs and OS/editor noise
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

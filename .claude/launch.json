@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "site-with-mock-email",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/dev-with-mock.mjs", "--port", "5173", "--strictPort"],
+      "port": 5173
+    }
+  ]
+}

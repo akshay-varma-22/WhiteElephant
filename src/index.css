@@ -1,0 +1,1720 @@
+@import 'tailwindcss';
+
+/* Self-hosted fonts (no third-party font requests). */
+@import '@fontsource/cormorant-garamond/latin-500.css';
+@import '@fontsource/cormorant-garamond/latin-600.css';
+@import '@fontsource/cormorant-garamond/latin-500-italic.css';
+@import '@fontsource-variable/jost/wght.css';
+
+/*
+ * Brand palette, taken from the White Elephant business card and the studio's mobile design:
+ * warm cream paper, a deep copper-brown, near-black lettering and a softer brown for italic accents.
+ * Text colours keep >= 4.5:1 contrast on their usual backgrounds (checked by the automated tests).
+ */
+@theme {
+  --font-serif: 'Cormorant Garamond', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-sans: 'Jost Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  --color-ivory: #faf6ee;
+  --color-cream: #f3ecdf;
+  --color-sand: #e7dcc7;
+  --color-line: #ddd1ba;
+  --color-gold: #b08d57;
+  --color-gold-light: #dcc397;
+  --color-bronze: #7a5c30;
+  --color-brown: #5a4430;
+
+  /* --- from the mobile design --- */
+  --color-header: #eee1d0; /* header band */
+  --color-parchment: #f1e4d4; /* the cream under the hero (services section) */
+  --color-tan: #e1d1bf; /* label cards under the arched photos */
+  --color-copper: #68462b; /* buttons, badges, brown band */
+  --color-copper-dark: #54371f; /* hover */
+  --color-deep: #68462b; /* darker sections: "Why choose us", footer */
+  --color-ink: #130e07; /* headlines */
+  --color-ink-soft: #3d2d1c; /* small dark text on the hero photo */
+  --color-accent: #735130; /* italic words ("Every Story.", "Services") */
+  --color-on-copper: #ffebd5; /* text on brown */
+  --color-page: #f7efe4; /* page cream between the panels */
+  --color-panel: #f1e4d4; /* panel cream (About, Services, Why choose us, Contact) */
+  --color-label: #f6ede0; /* name panels under the arched service photos */
+  --color-circle: #7e4f2c; /* numbered circles in the process steps */
+  --color-footer: #3f2514; /* footer */
+
+  --color-espresso: #2b2420;
+  --color-charcoal: #2b2622;
+  --color-stone: #6b6259;
+  --color-error: #a3261b;
+  --color-success: #2f6b3f;
+
+  --shadow-soft: 0 18px 40px -22px rgb(43 36 32 / 0.35);
+  --animate-fade-up: fade-up 0.5s ease-out both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  /*
+   * Phones (< 640px) follow the studio's mobile design proportionally: it was drawn on a 900-unit-wide canvas,
+   * so `--u` is 1/900 of the screen width and positions/sizes are written as multiples of it. Text never goes
+   * below a readable minimum (see the max() floors). Tablets and desktops (>= 640px) use a wider layout of the
+   * same design with the same colours and the same order of elements.
+   */
+  :root {
+    --u: calc(100vw / 900);
+    --header-h: clamp(3.75rem, calc(150 * var(--u)), 4.75rem);
+    --pad-x: calc(40 * var(--u)); /* side padding of the page sections */
+  }
+  @media (min-width: 640px) {
+    :root {
+      --header-h: 4.75rem;
+      --pad-x: max(2rem, calc((100vw - 72rem) / 2));
+    }
+  }
+  @media (min-width: 1024px) {
+    :root {
+      --header-h: 5.25rem;
+    }
+  }
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: var(--header-h); /* sticky header height */
+    -webkit-text-size-adjust: 100%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  body {
+    @apply bg-ivory font-sans text-base leading-relaxed text-charcoal antialiased;
+    overflow-x: hidden;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-serif font-medium tracking-tight text-charcoal;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-copper);
+    outline-offset: 3px;
+  }
+  .on-dark :focus-visible {
+    outline-color: var(--color-gold-light);
+  }
+  ::selection {
+    background: var(--color-gold-light);
+    color: var(--color-espresso);
+  }
+  /* Comfortable, readable form controls on every device (16px+ prevents iOS zoom). */
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+  /* While a popup (the quotation form, the project lightbox) is open the page behind it does not scroll. */
+  html {
+    scrollbar-gutter: stable;
+  }
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10;
+  }
+
+  .section {
+    @apply py-20 md:py-28;
+  }
+
+  .eyebrow {
+    @apply font-medium uppercase tracking-[0.24em] text-bronze sm:text-[0.72rem] sm:tracking-[0.28em];
+    font-size: max(calc(19 * var(--u)), 0.62rem);
+  }
+  @media (min-width: 640px) {
+    .eyebrow {
+      font-size: 0.72rem;
+    }
+  }
+  .on-dark .eyebrow {
+    @apply text-gold-light;
+  }
+
+  .heading-xl {
+    @apply font-serif text-[2.6rem] leading-[1.05] sm:text-6xl lg:text-[4.4rem];
+  }
+  .heading-lg {
+    @apply font-serif text-[2.1rem] leading-[1.1] sm:text-5xl;
+  }
+
+  .rule {
+    @apply h-px w-14 bg-gold;
+  }
+
+  .btn {
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[4px] px-7 py-3 text-[0.76rem] font-medium uppercase tracking-[0.18em] transition duration-300;
+  }
+  .btn-primary {
+    @apply bg-copper text-on-copper hover:bg-copper-dark;
+  }
+  .btn-outline {
+    @apply border border-copper text-copper hover:bg-copper hover:text-on-copper;
+  }
+  .btn-light {
+    @apply border border-ivory/70 text-ivory hover:bg-ivory hover:text-espresso;
+  }
+  .btn-gold {
+    @apply bg-gold-light text-espresso hover:bg-ivory;
+  }
+
+  /* Form controls */
+  .input {
+    @apply block min-h-[50px] w-full border border-line bg-white px-4 py-3 text-[1rem] text-charcoal transition placeholder:text-stone hover:border-gold focus:border-copper;
+  }
+  .input[aria-invalid='true'] {
+    @apply border-error;
+  }
+  .label {
+    @apply mb-2 block text-[0.9rem] font-medium text-charcoal;
+  }
+  .hint {
+    @apply mt-1.5 text-[0.82rem] leading-snug text-stone;
+  }
+  .error-text {
+    @apply mt-1.5 flex items-start gap-1.5 text-[0.86rem] font-medium leading-snug text-error;
+  }
+
+  /* ==================================================================================================
+   * Header
+   * ================================================================================================== */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background-color: var(--color-header);
+  }
+  .site-header-inner {
+    display: flex;
+    height: var(--header-h);
+    align-items: center;
+    justify-content: space-between;
+    gap: max(calc(18 * var(--u)), 0.5rem);
+    padding: 0 calc(22 * var(--u)) 0 calc(56 * var(--u));
+  }
+  .site-logo {
+    width: max(calc(262 * var(--u)), 6.2rem);
+    height: auto;
+  }
+  /* In the design the button and menu icon sit a little below the logo's centre line. */
+  .header-actions {
+    position: relative;
+    top: calc(9 * var(--u));
+    display: flex;
+    align-items: center;
+    gap: max(calc(26 * var(--u)), 0.1rem);
+  }
+  .header-cta {
+    display: inline-flex;
+    min-height: max(calc(72 * var(--u)), 2.2rem);
+    align-items: center;
+    gap: 0.6em;
+    border-radius: 4px;
+    background-color: var(--color-copper);
+    padding: 0 max(calc(54 * var(--u)), 0.75rem);
+    color: var(--color-on-copper);
+    font-size: max(calc(19.5 * var(--u)), 0.62rem);
+    font-weight: 400;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: background-color 0.3s;
+  }
+  .header-menu-icon {
+    width: max(calc(44 * var(--u)), 1.4rem);
+    height: auto;
+  }
+  @media (max-width: 389px) {
+    .site-header-inner {
+      padding-left: 0.9rem;
+    }
+    .site-logo {
+      width: 5.6rem;
+    }
+    .header-cta {
+      padding: 0 0.7rem;
+      letter-spacing: 0.1em;
+    }
+  }
+  .header-cta:hover {
+    background-color: var(--color-copper-dark);
+  }
+  @media (min-width: 640px) {
+    .site-header-inner {
+      max-width: 80rem;
+      margin-inline: auto;
+      padding: 0 2rem;
+      gap: 1rem;
+    }
+    .site-logo {
+      width: auto;
+      height: 3.4rem;
+    }
+    .header-actions {
+      top: 0;
+      gap: 0.75rem;
+    }
+    .header-cta {
+      min-height: 2.9rem;
+      gap: 0.7em;
+      padding: 0 1.6rem;
+      font-size: 0.78rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .site-header-inner {
+      padding: 0 2.5rem;
+    }
+    .site-logo {
+      height: 4.3rem;
+    }
+  }
+
+  /* ==================================================================================================
+   * Shared bits for the page sections (phones: sizes follow the screen width through --u; wide screens: rem sizes)
+   * ================================================================================================== */
+  .video-intro,
+  .about,
+  .highlights,
+  .services,
+  .projects,
+  .why,
+  .testimonials,
+  .cta,
+  .process,
+  .contact {
+    position: relative;
+  }
+  .services,
+  .projects,
+  .why,
+  .testimonials,
+  .process,
+  .contact {
+    padding: calc(80 * var(--u)) var(--pad-x) calc(90 * var(--u));
+  }
+  .services-title,
+  .projects-title,
+  .why-title,
+  .testimonials-title,
+  .process-title,
+  .contact-title,
+  .about-title,
+  .cta-title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
+
+  /* ==================================================================================================
+   * Hero
+   * ================================================================================================== */
+  .hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: calc(982 * var(--u));
+    background-color: var(--color-ivory);
+    color: var(--color-ink);
+  }
+  .hero-photo {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+  .hero-photo img {
+    object-position: 40% 0%;
+  }
+  /* Everything stays to the left of the wooden slats, as in the design. */
+  .hero-copy {
+    width: calc(600 * var(--u));
+    padding: calc(150 * var(--u)) 0 calc(112 * var(--u)) calc(102 * var(--u));
+  }
+  .hero-eyebrow {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 0.55em;
+    row-gap: 0.4em;
+    font-size: max(calc(18 * var(--u)), 0.5625rem);
+    font-weight: 400;
+    letter-spacing: 0.13em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
+  .hero-eyebrow > span {
+    white-space: nowrap;
+  }
+  .hero-eyebrow i {
+    font-style: normal;
+  }
+  /* The small lines are written straight onto the photo; a faint cream halo keeps them legible where the photo gets busy. */
+  .hero-eyebrow,
+  .hero-location {
+    text-shadow:
+      0 0 1.5em rgb(244 232 215),
+      0 0 1.1em rgb(244 232 215),
+      0 0 0.8em rgb(244 232 215 / 0.95),
+      0 0 0.5em rgb(244 232 215 / 0.95),
+      0 0 0.25em rgb(244 232 215 / 0.9);
+  }
+  .hero-location {
+    text-shadow:
+      0 0 2.2em rgb(244 232 215),
+      0 0 1.6em rgb(244 232 215),
+      0 0 1.1em rgb(244 232 215),
+      0 0 0.8em rgb(244 232 215),
+      0 0 0.5em rgb(244 232 215 / 0.95),
+      0 0 0.25em rgb(244 232 215 / 0.9);
+  }
+  .hero-title {
+    margin-top: calc(40 * var(--u));
+    font-family: var(--font-serif);
+    font-size: max(calc(87 * var(--u)), 1.9rem);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.012em;
+    color: var(--color-ink);
+  }
+  .hero-title em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--color-accent);
+  }
+  /* At least the design's width; grows (never wraps) when the phone's minimum font size needs more room. */
+  .hero-cta {
+    display: flex;
+    width: max-content;
+    min-width: calc(495 * var(--u));
+    min-height: max(calc(97 * var(--u)), 2.6rem);
+    align-items: center;
+    justify-content: center;
+    gap: 0.9em;
+    margin-top: calc(38 * var(--u));
+    padding: 0 calc(40 * var(--u));
+    border-radius: 4px;
+    background-color: var(--color-copper);
+    color: var(--color-on-copper);
+    font-size: max(calc(22 * var(--u)), 0.62rem);
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: background-color 0.3s;
+  }
+  .hero-cta:hover {
+    background-color: var(--color-copper-dark);
+  }
+  .hero-location {
+    display: flex;
+    align-items: center;
+    gap: calc(14 * var(--u));
+    margin: calc(46 * var(--u)) 0 0 calc(4 * var(--u));
+    font-size: max(calc(23 * var(--u)), 0.68rem);
+    line-height: 1.2;
+    color: var(--color-ink);
+  }
+  .hero-pin {
+    height: max(calc(34 * var(--u)), 1.05rem);
+    width: max(calc(26 * var(--u)), 0.82rem);
+    flex-shrink: 0;
+    color: var(--color-copper);
+  }
+
+  /* ==================================================================================================
+   * Video intro
+   * ================================================================================================== */
+  .video-intro {
+    background-color: var(--color-page);
+    padding: calc(30 * var(--u)) calc(18 * var(--u));
+  }
+  .video-card {
+    position: relative;
+    /* The clip's own shape (1028 x 544, the owner's video with its dark edge cropped off), so none of the words written into it are ever cut. */
+    aspect-ratio: 1028 / 544;
+    overflow: hidden;
+    border-radius: max(calc(14 * var(--u)), 0.5rem);
+    background-color: #3a2a1c;
+  }
+  .video-media {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+  }
+
+  /* ==================================================================================================
+   * About
+   * ================================================================================================== */
+  .about {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) calc(258 * var(--u));
+    background-color: var(--color-panel);
+  }
+  .about-text {
+    padding: calc(56 * var(--u)) calc(24 * var(--u)) calc(60 * var(--u)) calc(47 * var(--u));
+  }
+  .about-title {
+    max-width: calc(520 * var(--u));
+    margin-top: calc(26 * var(--u));
+    font-size: max(calc(56 * var(--u)), 1.4rem);
+    line-height: 1.14;
+  }
+  .about-copy {
+    margin-top: calc(32 * var(--u));
+    font-size: max(calc(22 * var(--u)), 0.72rem);
+    line-height: 1.65;
+    color: var(--color-stone);
+  }
+  .about-btn {
+    display: inline-flex;
+    min-height: max(calc(75 * var(--u)), 2.5rem);
+    align-items: center;
+    gap: 0.8em;
+    margin-top: calc(40 * var(--u));
+    padding: 0 calc(38 * var(--u));
+    border-radius: 4px;
+    background-color: var(--color-copper);
+    color: var(--color-on-copper);
+    font-size: max(calc(22 * var(--u)), 0.62rem);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transition: background-color 0.3s;
+  }
+  .about-btn:hover {
+    background-color: var(--color-copper-dark);
+  }
+  .about-photo {
+    position: relative;
+    margin: calc(33 * var(--u)) 0 0 calc(22 * var(--u));
+    overflow: hidden;
+    border-radius: 999px 999px 0 0;
+    background-color: var(--color-sand);
+  }
+
+  /* ==================================================================================================
+   * Key highlights
+   * ================================================================================================== */
+  .highlights {
+    background-color: var(--color-page);
+    padding: calc(70 * var(--u)) calc(24 * var(--u)) calc(66 * var(--u));
+  }
+  .highlights-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .highlight {
+    text-align: center;
+  }
+  .highlight-icon {
+    width: max(calc(64 * var(--u)), 1.6rem);
+    height: max(calc(64 * var(--u)), 1.6rem);
+    margin-inline: auto;
+    color: #9b6a45;
+  }
+  .highlight-value {
+    margin-top: calc(28 * var(--u));
+    font-family: var(--font-serif);
+    font-variant-numeric: lining-nums;
+    font-size: max(calc(62 * var(--u)), 1.55rem);
+    font-weight: 600;
+    line-height: 1;
+    color: var(--color-ink);
+  }
+  .highlight-label {
+    margin-top: calc(22 * var(--u));
+    font-size: max(calc(24 * var(--u)), 0.72rem);
+    line-height: 1.32;
+    color: var(--color-stone);
+  }
+
+  /* ==================================================================================================
+   * Services: arched cards
+   * ================================================================================================== */
+  .services {
+    background-color: var(--color-panel);
+  }
+  .services-eyebrow {
+    padding-left: calc(30 * var(--u));
+  }
+  .services-title {
+    margin-top: calc(38 * var(--u));
+    text-align: center;
+    font-size: max(calc(76 * var(--u)), 1.8rem);
+    line-height: 1.1;
+  }
+  .services-intro {
+    max-width: calc(780 * var(--u));
+    margin: calc(26 * var(--u)) auto 0;
+    text-align: center;
+    font-size: max(calc(28 * var(--u)), 0.78rem);
+    line-height: 1.6;
+    color: var(--color-stone);
+  }
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: calc(30 * var(--u)) calc(16 * var(--u));
+    margin: calc(56 * var(--u)) calc(-22 * var(--u)) 0;
+    padding: 0;
+    list-style: none;
+  }
+  .arch {
+    display: flex;
+    flex-direction: column;
+    container-type: inline-size;
+  }
+  .arch-media {
+    position: relative;
+  }
+  .arch-photo {
+    position: relative;
+    aspect-ratio: 317 / 415;
+    overflow: hidden;
+    border-radius: 999px 999px 0 0;
+    background-color: var(--color-sand);
+  }
+  .arch-photo img {
+    scale: var(--zoom, 1);
+  }
+  .arch-badge {
+    position: absolute;
+    bottom: -13.6cqw;
+    left: 50%;
+    display: flex;
+    width: min(34.7cqw, 5.4rem);
+    aspect-ratio: 1;
+    transform: translate(-50%, 0);
+    align-items: center;
+    justify-content: center;
+    border: max(1.2cqw, 1.5px) solid #f3dfc9;
+    border-radius: 9999px;
+    background-color: var(--color-copper);
+    color: #f3dfc9;
+  }
+  .arch-badge svg {
+    width: 46%;
+    height: 46%;
+  }
+  .arch-label {
+    flex: 1;
+    margin-top: -1px;
+    border-radius: 0 0 4cqw 4cqw;
+    background-color: var(--color-label);
+    box-shadow: 0 10px 18px -16px rgb(80 55 30 / 0.45);
+    padding: 22cqw 3cqw 10.4cqw;
+    text-align: center;
+  }
+  .arch-title {
+    font-family: var(--font-sans);
+    font-size: clamp(0.68rem, 10.6cqw, 1.05rem);
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.22;
+    color: #2f2314;
+  }
+  .arch-desc {
+    margin-top: 0.55rem;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--color-ink-soft);
+  }
+
+  /* ==================================================================================================
+   * Featured projects
+   * ================================================================================================== */
+  .projects {
+    background-color: var(--color-page);
+  }
+  .projects-title {
+    margin-top: calc(32 * var(--u));
+    max-width: calc(700 * var(--u));
+    font-size: max(calc(68 * var(--u)), 1.7rem);
+    line-height: 1.12;
+  }
+  .project-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(12 * var(--u));
+    margin-top: calc(40 * var(--u));
+  }
+  .project-chip {
+    min-height: max(calc(66 * var(--u)), 2.4rem);
+    padding: 0 calc(22 * var(--u));
+    border: 1px solid #dccbb2;
+    border-radius: 6px;
+    background-color: #fbf5ec;
+    font-size: max(calc(21 * var(--u)), 0.7rem);
+    color: var(--color-ink);
+    transition:
+      background-color 0.25s,
+      color 0.25s;
+  }
+  .project-chip:hover {
+    border-color: var(--color-copper);
+  }
+  .project-chip[aria-pressed='true'] {
+    border-color: var(--color-copper);
+    background-color: var(--color-copper);
+    color: var(--color-on-copper);
+  }
+  .project-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: calc(16 * var(--u));
+    margin: calc(34 * var(--u)) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .project-feature {
+    grid-column: 1 / -1;
+  }
+  .project-card {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    border-radius: max(calc(12 * var(--u)), 0.4rem);
+    aspect-ratio: 1.03 / 1;
+    background-color: var(--color-sand);
+  }
+  .project-feature .project-card {
+    aspect-ratio: 1.83 / 1;
+  }
+  .project-shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(to top, rgb(30 18 8 / 0.7), rgb(30 18 8 / 0) 56%);
+  }
+  .project-caption {
+    position: absolute;
+    bottom: calc(24 * var(--u));
+    left: calc(26 * var(--u));
+    right: calc(26 * var(--u));
+    display: flex;
+    flex-direction: column;
+    gap: 0.15em;
+    pointer-events: none;
+    color: #fff;
+  }
+  .project-cat {
+    font-size: max(calc(21 * var(--u)), 0.64rem);
+    color: rgb(255 255 255 / 0.88);
+  }
+  .project-name {
+    font-size: max(calc(26 * var(--u)), 0.76rem);
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .project-hit {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: zoom-in;
+  }
+  .project-hit:focus-visible {
+    outline-offset: -6px;
+  }
+  .projects-more {
+    margin-top: calc(40 * var(--u));
+    text-align: center;
+  }
+  .projects-btn {
+    display: inline-flex;
+    min-height: max(calc(84 * var(--u)), 2.7rem);
+    align-items: center;
+    gap: 0.8em;
+    padding: 0 calc(56 * var(--u));
+    border-radius: 4px;
+    background-color: var(--color-copper);
+    color: var(--color-on-copper);
+    font-size: max(calc(22 * var(--u)), 0.64rem);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transition: background-color 0.3s;
+  }
+  .projects-btn:hover {
+    background-color: var(--color-copper-dark);
+  }
+  .projects-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-top: calc(36 * var(--u));
+    font-size: max(calc(20 * var(--u)), 0.7rem);
+    line-height: 1.5;
+    color: var(--color-stone);
+  }
+
+  /* ==================================================================================================
+   * Why choose us
+   * ================================================================================================== */
+  .why {
+    background-color: var(--color-panel);
+  }
+  .why-title {
+    margin-top: calc(32 * var(--u));
+    font-size: max(calc(56 * var(--u)), 1.45rem);
+    line-height: 1.14;
+  }
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: calc(16 * var(--u));
+    margin: calc(54 * var(--u)) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .why-card {
+    border-radius: max(calc(14 * var(--u)), 0.5rem);
+    background-color: var(--color-page);
+    box-shadow: 0 12px 24px -20px rgb(80 55 30 / 0.45);
+    padding: calc(46 * var(--u)) calc(28 * var(--u)) calc(42 * var(--u));
+  }
+  .why-icon {
+    width: max(calc(76 * var(--u)), 1.7rem);
+    height: max(calc(76 * var(--u)), 1.7rem);
+    color: var(--color-copper);
+  }
+  .why-card-title {
+    margin-top: calc(40 * var(--u));
+    font-family: var(--font-sans);
+    font-size: max(calc(25 * var(--u)), 0.76rem);
+    font-weight: 500;
+    letter-spacing: 0;
+    line-height: 1.25;
+    color: var(--color-ink);
+  }
+  .why-card-text {
+    margin-top: calc(16 * var(--u));
+    font-size: max(calc(26 * var(--u)), 0.74rem);
+    line-height: 1.5;
+    color: var(--color-stone);
+  }
+
+  /* ==================================================================================================
+   * Testimonials (shown only when real ones exist: src/data/testimonials.js)
+   * ================================================================================================== */
+  .testimonials {
+    background-color: var(--color-page);
+  }
+  .testimonials-title {
+    margin-top: calc(30 * var(--u));
+    font-size: max(calc(68 * var(--u)), 1.7rem);
+    line-height: 1.12;
+  }
+  .testimonial-wrap {
+    display: flex;
+    align-items: center;
+    gap: calc(8 * var(--u));
+    margin-top: calc(44 * var(--u));
+  }
+  .testimonial-card {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    border-radius: max(calc(16 * var(--u)), 0.5rem);
+    background-color: #fbf6ee;
+    box-shadow: 0 14px 28px -22px rgb(80 55 30 / 0.5);
+    padding: calc(40 * var(--u)) calc(48 * var(--u)) calc(44 * var(--u));
+  }
+  .testimonial-mark {
+    display: block;
+    height: 0.55em;
+    font-family: var(--font-serif);
+    font-size: max(calc(80 * var(--u)), 2rem);
+    line-height: 1;
+    color: var(--color-copper);
+  }
+  .testimonial-quote {
+    margin-top: calc(30 * var(--u));
+    font-size: max(calc(24 * var(--u)), 0.78rem);
+    line-height: 1.6;
+    color: var(--color-stone);
+  }
+  .testimonial-person {
+    display: flex;
+    align-items: center;
+    gap: calc(26 * var(--u));
+    margin-top: calc(34 * var(--u));
+  }
+  .testimonial-avatar {
+    position: relative;
+    display: flex;
+    width: max(calc(100 * var(--u)), 2.6rem);
+    aspect-ratio: 1;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 9999px;
+    background-color: var(--color-sand);
+    font-family: var(--font-serif);
+    font-size: max(calc(40 * var(--u)), 1.1rem);
+    font-weight: 600;
+    color: var(--color-copper);
+  }
+  .testimonial-name {
+    display: block;
+    font-size: max(calc(25 * var(--u)), 0.8rem);
+    font-weight: 500;
+    color: var(--color-ink);
+  }
+  .testimonial-role {
+    display: block;
+    font-size: max(calc(22 * var(--u)), 0.7rem);
+    color: var(--color-stone);
+  }
+  .testimonial-arrow {
+    display: inline-flex;
+    height: 2.75rem;
+    width: 2rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-copper);
+  }
+  .testimonial-arrow svg {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+  .testimonial-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-top: calc(24 * var(--u));
+  }
+  .testimonial-dot {
+    position: relative;
+    height: 1.6rem;
+    width: 1.6rem;
+  }
+  .testimonial-dot::after {
+    content: '';
+    position: absolute;
+    inset: 0.5rem;
+    border-radius: 9999px;
+    background-color: #d6c4ab;
+  }
+  .testimonial-dot[aria-current='true']::after {
+    background-color: var(--color-copper);
+  }
+
+  /* ==================================================================================================
+   * Quote banner
+   * ================================================================================================== */
+  .cta {
+    background-color: var(--color-page);
+    padding: calc(40 * var(--u)) calc(18 * var(--u)) calc(50 * var(--u));
+  }
+  .cta-card {
+    position: relative;
+    isolation: isolate;
+    min-height: calc(560 * var(--u));
+    overflow: hidden;
+    border-radius: max(calc(14 * var(--u)), 0.5rem);
+    background: linear-gradient(115deg, #5b3a21 0%, #4c311c 100%);
+    color: #fff;
+  }
+  .cta-photo {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    width: 38%;
+  }
+  .cta-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, #54361e 0%, rgb(84 54 30 / 0.7) 35%, rgb(84 54 30 / 0) 100%);
+  }
+  .cta-text {
+    padding: calc(112 * var(--u)) 0 calc(76 * var(--u)) calc(54 * var(--u));
+    max-width: 80%;
+  }
+  .cta-eyebrow {
+    font-size: max(calc(19 * var(--u)), 0.6rem);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ead3b0;
+  }
+  .cta-title {
+    margin-top: calc(40 * var(--u));
+    font-size: max(calc(66 * var(--u)), 1.7rem);
+    line-height: 1.1;
+    color: #fff;
+  }
+  .cta-copy {
+    margin-top: calc(34 * var(--u));
+    max-width: 92%;
+    font-size: max(calc(28 * var(--u)), 0.8rem);
+    line-height: 1.6;
+    color: rgb(255 244 228 / 0.92);
+  }
+  .cta-btn {
+    display: inline-flex;
+    min-height: max(calc(108 * var(--u)), 2.9rem);
+    align-items: center;
+    gap: 0.8em;
+    margin-top: calc(56 * var(--u));
+    padding: 0 calc(62 * var(--u));
+    border-radius: 4px;
+    background-color: #ebd6bc;
+    color: var(--color-ink);
+    font-size: max(calc(27 * var(--u)), 0.7rem);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transition: background-color 0.3s;
+  }
+  .cta-btn:hover {
+    background-color: #f6e6cf;
+  }
+
+  /* ==================================================================================================
+   * Quotation popup (a native modal <dialog>, see components/quotation/QuoteDialog.jsx)
+   * ================================================================================================== */
+  .quote-dialog {
+    margin: auto;
+    padding: 0;
+    border: 0;
+    width: min(33rem, calc(100vw - 1.5rem));
+    max-height: calc(100dvh - 1.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 0.9rem;
+    background-color: var(--color-page);
+    color: var(--color-ink);
+    box-shadow: 0 30px 80px -24px rgb(30 18 8 / 0.6);
+  }
+  .quote-dialog::backdrop {
+    background-color: rgb(38 22 10 / 0.6);
+    backdrop-filter: blur(3px);
+  }
+  .quote-dialog[open] {
+    animation: quote-pop 0.28s ease-out;
+  }
+  @keyframes quote-pop {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .quote-panel {
+    position: relative;
+    padding: 1.5rem 1.3rem 0.6rem;
+  }
+  .quote-panel:focus {
+    outline: none; /* the panel only takes focus when the popup opens on a phone; it is not a control */
+  }
+  .quote-close {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    display: flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    color: var(--color-ink-soft);
+    transition: background-color 0.2s;
+  }
+  .quote-close:hover {
+    background-color: rgb(104 70 43 / 0.12);
+  }
+  .quote-close svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .quote-title {
+    padding-right: 2.4rem;
+    font-size: clamp(1.6rem, 6.2vw, 2rem);
+    line-height: 1.12;
+  }
+  .quote-intro {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--color-ink-soft);
+  }
+  .quote-body {
+    margin-top: 1rem;
+  }
+  /* "Let's connect?" and the two numbers share one row (they wrap under each other only on the narrowest phones). */
+  .quote-call {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 1.2rem;
+    margin-top: 0.9rem;
+    border-top: 1px solid var(--color-line);
+    font-size: 0.9rem;
+  }
+  .quote-call p {
+    font-weight: 500;
+  }
+  .quote-call ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.2rem;
+  }
+  .quote-call a {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--color-bronze);
+  }
+  .quote-call a:hover {
+    text-decoration: underline;
+  }
+  @media (min-width: 640px) {
+    .quote-panel {
+      padding: 1.9rem 2.4rem 0.7rem;
+    }
+  }
+  /* Narrow phones: keep the button label and the two numbers each on one line. */
+  @media (max-width: 400px) {
+    .quote-dialog .btn {
+      padding-inline: 0.8rem;
+      letter-spacing: 0.1em;
+      font-size: 0.72rem;
+    }
+    .quote-call,
+    .quote-call ul {
+      column-gap: 0.8rem;
+    }
+    .quote-call {
+      font-size: 0.86rem;
+    }
+  }
+  /* The narrowest phones (320 px): a little less side padding and a slightly smaller prompt so "Please enter your mobile number" is not cut off. */
+  @media (max-width: 359px) {
+    .quote-panel {
+      padding-inline: 1rem;
+    }
+    .quote-dialog .input {
+      padding-inline: 0.75rem;
+    }
+    .quote-dialog .input::placeholder {
+      font-size: 0.9rem;
+    }
+  }
+  /* On a short screen (a small laptop window, a phone held sideways) drop the sentence under the title so the form never needs scrolling. */
+  @media (max-height: 740px) {
+    .quote-intro {
+      display: none;
+    }
+    .quote-body {
+      margin-top: 0.8rem;
+    }
+    .quote-dialog .label {
+      margin-bottom: 0.3rem;
+    }
+    .quote-dialog .input {
+      min-height: 44px;
+      padding-top: 0.55rem;
+      padding-bottom: 0.55rem;
+    }
+    .quote-dialog .hint {
+      display: none; /* a wrong number still gets its full explanation as an error message */
+    }
+  }
+
+  /* ==================================================================================================
+   * Process
+   * ================================================================================================== */
+  .process {
+    background-color: var(--color-page);
+  }
+  .process-title {
+    margin-top: calc(32 * var(--u));
+    font-size: max(calc(62 * var(--u)), 1.6rem);
+    line-height: 1.12;
+  }
+  .process-steps {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: calc(62 * var(--u)) 0 0;
+    padding: 0;
+    list-style: none;
+    text-align: center;
+  }
+  .process-steps::before {
+    content: '';
+    position: absolute;
+    top: max(calc(46 * var(--u)), 1.3rem);
+    right: 12.5%;
+    left: 12.5%;
+    height: 1px;
+    background-color: #dcc0a6;
+  }
+  .process-num {
+    position: relative;
+    display: flex;
+    width: max(calc(92 * var(--u)), 2.6rem);
+    aspect-ratio: 1;
+    align-items: center;
+    justify-content: center;
+    margin-inline: auto;
+    border-radius: 9999px;
+    background-color: var(--color-circle);
+    font-family: var(--font-serif);
+    font-variant-numeric: lining-nums;
+    font-size: max(calc(42 * var(--u)), 1.1rem);
+    font-weight: 500;
+    color: #fff;
+  }
+  .process-step-title {
+    margin-top: calc(28 * var(--u));
+    font-family: var(--font-sans);
+    font-size: max(calc(29 * var(--u)), 0.82rem);
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--color-ink);
+  }
+  .process-step-text {
+    margin-top: calc(12 * var(--u));
+    padding: 0 calc(4 * var(--u));
+    font-size: max(calc(23 * var(--u)), 0.7rem);
+    line-height: 1.5;
+    color: var(--color-stone);
+  }
+
+  /* ==================================================================================================
+   * Contact
+   * ================================================================================================== */
+  .contact {
+    background-color: var(--color-panel);
+  }
+  .contact-title {
+    margin-top: calc(32 * var(--u));
+    font-size: max(calc(62 * var(--u)), 1.55rem);
+    line-height: 1.12;
+  }
+  .contact-intro {
+    max-width: 84%;
+    margin-top: calc(22 * var(--u));
+    font-size: max(calc(28 * var(--u)), 0.78rem);
+    line-height: 1.55;
+    color: var(--color-stone);
+  }
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: calc(16 * var(--u));
+    margin: calc(44 * var(--u)) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .contact-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    border-radius: max(calc(14 * var(--u)), 0.5rem);
+    background-color: var(--color-page);
+    box-shadow: 0 12px 24px -20px rgb(80 55 30 / 0.45);
+    padding: calc(40 * var(--u)) calc(14 * var(--u)) calc(38 * var(--u));
+    text-align: center;
+  }
+  .contact-icon {
+    width: max(calc(66 * var(--u)), 1.6rem);
+    height: max(calc(66 * var(--u)), 1.6rem);
+    color: var(--color-copper);
+  }
+  .contact-card-title {
+    margin-top: calc(30 * var(--u));
+    font-family: var(--font-sans);
+    font-size: max(calc(29 * var(--u)), 0.82rem);
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--color-ink);
+  }
+  .contact-card-body {
+    margin-top: calc(14 * var(--u));
+    font-size: max(calc(26 * var(--u)), 0.72rem);
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+    overflow-wrap: anywhere;
+  }
+  .contact-link {
+    display: inline-block;
+    padding-block: 0.1rem;
+  }
+  .contact-link:hover {
+    text-decoration: underline;
+  }
+
+  /* ==================================================================================================
+   * Footer: deliberately small, the logo with the copyright line to the right of it
+   * ================================================================================================== */
+  .site-footer {
+    background-color: var(--color-footer);
+    color: #f3e3cc;
+    /* No spare room at the end: the sticky call bar on phones steps aside while the footer is on screen (MobileCtaBar.jsx). */
+  }
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* the logo and the line beside it sit together in the middle */
+    gap: calc(36 * var(--u));
+    padding: calc(40 * var(--u)) calc(40 * var(--u));
+  }
+  .footer-logo-link {
+    flex-shrink: 0;
+  }
+  .footer-logo {
+    display: block;
+    width: max(calc(250 * var(--u)), 6.2rem);
+    height: auto;
+  }
+  .footer-copy {
+    /* As wide as its longest line (two lines on a phone, one on a tablet or desktop), so the pair is truly centred;
+       on the very narrowest phones it may wrap to a third line instead of overflowing. */
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    text-align: left;
+    font-size: max(calc(21 * var(--u)), 0.68rem);
+    line-height: 1.5;
+    color: rgb(243 227 204 / 0.92);
+  }
+
+  /* ==================================================================================================
+   * Tablets and desktops (>= 640px): the same arrangement with fixed, comfortable sizes
+   * ================================================================================================== */
+  @media (min-width: 640px) {
+    /* Hero */
+    .hero {
+      display: flex;
+      align-items: center;
+      min-height: clamp(31rem, 50vw, 47rem);
+    }
+    .hero-photo img {
+      object-position: 50% 80%;
+    }
+    /* Text starts to the right of the photo's dark window frame, and lines up with the header on wide screens. */
+    .hero-copy {
+      width: auto;
+      max-width: 36rem;
+      margin-left: max(clamp(3rem, 7vw, 6rem), calc((100vw - 80rem) / 2 + 2.5rem));
+      padding: 2.5rem 0 clamp(4.5rem, 8vw, 6rem);
+    }
+    .hero-eyebrow {
+      font-size: 0.76rem;
+      letter-spacing: 0.22em;
+    }
+    .hero-title {
+      margin-top: 1.5rem;
+      font-size: clamp(2.9rem, 6.2vw, 5.6rem);
+      line-height: 1.02;
+    }
+    .hero-cta {
+      width: min(26rem, 100%);
+      min-width: 0;
+      min-height: 3.6rem;
+      margin-top: 2rem;
+      padding: 0 1.5rem;
+      font-size: 0.84rem;
+    }
+    .hero-location {
+      gap: 0.6rem;
+      margin: 1.7rem 0 0 0.3rem;
+      font-size: 1.05rem;
+    }
+    .hero-pin {
+      height: 1.3rem;
+      width: 1rem;
+    }
+
+    /* Shared paddings */
+    .services,
+    .projects,
+    .why,
+    .testimonials,
+    .process,
+    .contact {
+      padding: 5rem var(--pad-x) 5.5rem;
+    }
+
+    /* Video */
+    .video-intro {
+      padding: 3.5rem var(--pad-x);
+    }
+    .video-card {
+      border-radius: 1rem;
+    }
+
+    /* About */
+    .about {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
+      align-items: center;
+      gap: 4rem;
+      padding: 5rem var(--pad-x);
+    }
+    .about-text {
+      padding: 0;
+    }
+    .about-title {
+      margin-top: 1.1rem;
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+    }
+    .about-copy {
+      margin-top: 1.4rem;
+      max-width: 38rem;
+      font-size: 1.06rem;
+    }
+    .about-btn {
+      min-height: 3.2rem;
+      margin-top: 2rem;
+      padding: 0 1.9rem;
+      font-size: 0.78rem;
+    }
+    .about-photo {
+      margin: 0;
+      aspect-ratio: 4 / 5;
+    }
+
+    /* Highlights */
+    .highlights {
+      padding: 4.5rem var(--pad-x);
+    }
+    .highlights-grid {
+      max-width: 56rem;
+      margin-inline: auto;
+    }
+    .highlight-icon {
+      width: 2.8rem;
+      height: 2.8rem;
+    }
+    .highlight-value {
+      margin-top: 1rem;
+      font-size: 3rem;
+    }
+    .highlight-label {
+      margin-top: 0.7rem;
+      font-size: 1rem;
+    }
+
+    /* Services */
+    .services-eyebrow {
+      padding-left: 0;
+      text-align: center;
+    }
+    .services-title {
+      margin-top: 1.4rem;
+      font-size: clamp(2.4rem, 4.6vw, 3.8rem);
+    }
+    .services-intro {
+      max-width: 38rem;
+      margin-top: 1.1rem;
+      font-size: 1.08rem;
+    }
+    .arch-grid {
+      max-width: 64rem;
+      margin: 3.4rem auto 0;
+      gap: 2rem 1.6rem;
+    }
+
+    /* Projects */
+    .projects-title {
+      margin-top: 1.2rem;
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+    }
+    .project-filters {
+      gap: 0.6rem;
+      margin-top: 1.8rem;
+    }
+    .project-chip {
+      min-height: 2.8rem;
+      padding: 0 1.4rem;
+      font-size: 0.86rem;
+    }
+    .project-grid {
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .project-caption {
+      bottom: 1.2rem;
+      left: 1.4rem;
+      right: 1.4rem;
+    }
+    .project-cat {
+      font-size: 0.82rem;
+    }
+    .project-name {
+      font-size: 1.1rem;
+    }
+    .projects-more {
+      margin-top: 2.4rem;
+    }
+    .projects-btn {
+      min-height: 3.2rem;
+      padding: 0 2.2rem;
+      font-size: 0.78rem;
+    }
+    .projects-note {
+      margin-top: 1.8rem;
+      font-size: 0.86rem;
+    }
+
+    /* Why */
+    .why-title {
+      margin-top: 1.2rem;
+      max-width: 40rem;
+      font-size: clamp(2rem, 3.6vw, 3.1rem);
+    }
+    .why-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.2rem;
+      margin-top: 2.6rem;
+    }
+    .why-card {
+      border-radius: 0.9rem;
+      padding: 2.2rem 2rem;
+    }
+    .why-icon {
+      width: 2.6rem;
+      height: 2.6rem;
+    }
+    .why-card-title {
+      margin-top: 1.4rem;
+      font-size: 1.15rem;
+    }
+    .why-card-text {
+      margin-top: 0.6rem;
+      font-size: 1rem;
+    }
+
+    /* Testimonials */
+    .testimonials-title {
+      margin-top: 1.2rem;
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+    }
+    .testimonial-wrap {
+      max-width: 52rem;
+      margin: 2.4rem auto 0;
+      gap: 1rem;
+    }
+    .testimonial-card {
+      border-radius: 1rem;
+      padding: 2.2rem 2.6rem;
+    }
+    .testimonial-quote {
+      margin-top: 1.2rem;
+      font-size: 1.15rem;
+    }
+    .testimonial-person {
+      gap: 1.2rem;
+      margin-top: 1.6rem;
+    }
+    .testimonial-avatar {
+      width: 3.6rem;
+      font-size: 1.3rem;
+    }
+    .testimonial-name {
+      font-size: 1rem;
+    }
+    .testimonial-role {
+      font-size: 0.9rem;
+    }
+
+    /* Quote banner */
+    .cta {
+      padding: 3rem var(--pad-x);
+    }
+    .cta-card {
+      min-height: 26rem;
+      border-radius: 1rem;
+    }
+    .cta-photo {
+      width: 42%;
+    }
+    .cta-text {
+      max-width: 62%;
+      padding: 4.2rem 0 4rem 3.6rem;
+    }
+    .cta-eyebrow {
+      font-size: 0.78rem;
+    }
+    .cta-title {
+      margin-top: 1rem;
+      font-size: clamp(2.4rem, 4.4vw, 3.6rem);
+    }
+    .cta-copy {
+      margin-top: 1rem;
+      max-width: 28rem;
+      font-size: 1.1rem;
+    }
+    .cta-btn {
+      min-height: 3.4rem;
+      margin-top: 1.8rem;
+      padding: 0 2.2rem;
+      font-size: 0.82rem;
+    }
+
+    /* Process */
+    .process-title {
+      margin-top: 1.2rem;
+      font-size: clamp(2.1rem, 3.8vw, 3.2rem);
+    }
+    .process-steps {
+      max-width: 60rem;
+      margin: 3rem auto 0;
+    }
+    .process-steps::before {
+      top: 1.9rem;
+    }
+    .process-num {
+      width: 3.8rem;
+      font-size: 1.5rem;
+    }
+    .process-step-title {
+      margin-top: 1.1rem;
+      font-size: 1.15rem;
+    }
+    .process-step-text {
+      margin-top: 0.5rem;
+      padding: 0 0.8rem;
+      font-size: 0.95rem;
+    }
+
+    /* Contact */
+    .contact-title {
+      margin-top: 1.2rem;
+      font-size: clamp(2.1rem, 3.8vw, 3.2rem);
+    }
+    .contact-intro {
+      margin-top: 0.9rem;
+      font-size: 1.08rem;
+    }
+    .contact-grid {
+      max-width: 70rem;
+      gap: 1.2rem;
+      margin: 2.4rem 0 0;
+    }
+    .contact-card {
+      border-radius: 0.9rem;
+      padding: 2.2rem 1.4rem;
+    }
+    .contact-icon {
+      width: 2.4rem;
+      height: 2.4rem;
+    }
+    .contact-card-title {
+      margin-top: 1rem;
+      font-size: 1.15rem;
+    }
+    .contact-card-body {
+      margin-top: 0.6rem;
+      font-size: 1rem;
+    }
+
+    /* Footer */
+    .footer-inner {
+      max-width: calc(72rem + 2 * var(--pad-x));
+      margin-inline: auto;
+      padding: 1.5rem var(--pad-x);
+      gap: 2rem;
+    }
+    .footer-logo {
+      width: 9rem;
+    }
+    .footer-copy {
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-copy {
+      max-width: 44rem;
+    }
+    .about {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+      gap: 5rem;
+    }
+    .arch-grid {
+      gap: 2.4rem 2rem;
+    }
+    .arch-title {
+      font-size: 1.12rem;
+    }
+    .project-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .project-feature {
+      grid-column: span 2;
+      grid-row: span 2;
+    }
+    .project-feature .project-card {
+      aspect-ratio: auto;
+    }
+    .project-card {
+      aspect-ratio: 4 / 3;
+    }
+    .why-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .cta-text {
+      max-width: 58%;
+      padding-left: 4.6rem;
+    }
+  }
+}
+
+/* Utilities that Tailwind does not provide out of the box */
+@utility text-balance {
+  text-wrap: balance;
+}
+@utility text-pretty {
+  text-wrap: pretty;
+}

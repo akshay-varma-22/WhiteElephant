@@ -1,0 +1,49 @@
+{
+  "name": "white-elephant-creative-studio",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Website and quotation lead workflow for White Elephant Creative Studio, Hyderabad.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:mock": "node scripts/dev-with-mock.mjs",
+    "build": "vite build",
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "verify": "npm run test && npm run build && npm run check:bundle",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "brand": "node scripts/make-brand-assets.mjs",
+    "mock-email": "node scripts/mock-resend-server.mjs",
+    "send-test-lead": "node scripts/send-test-lead.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/jost": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "lucide-react": "^1.57.0",
+    "nodemailer": "^10.1.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@vitejs/plugin-react": "^6.1.2",
+    "jsdom": "^29.1.1",
+    "mailparser": "^3.9.39",
+    "sharp": "^0.35.5",
+    "smtp-server": "^3.19.22",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.4",
+    "vite-imagetools": "^12.0.1",
+    "vitest": "^5.0.4"
+  }
+}
