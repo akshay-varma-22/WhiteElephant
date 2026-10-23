@@ -71,7 +71,7 @@ describe('sending', () => {
     expect(sent.to).toEqual(['studio@example.test']);
     expect(sent.replyTo).toBe('customer@example.com');
     expect(sent.subject).toBe('New Quotation Lead — Test — +91 99496 21569');
-    expect(sent.messageId).toBe('<wecs-abc123@whiteelephantcreativestudio.com>');
+    expect(sent.messageId).toBe('<wecs-abc123@whiteelephantcreativestudio.in>');
   });
 
   it('omits replyTo when the visitor gave no email', async () => {

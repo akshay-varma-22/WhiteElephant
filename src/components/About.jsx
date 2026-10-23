@@ -1,7 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import Photo from './Photo.jsx';
 
-/** About: the story on the left and a tall arched photo on the right (as in the studio's design). */
+/** About: the story on the left and a tall arched photo on the right (as in the studio's design); phones and wider screens get their own picture. */
 export default function About() {
   return (
     <section id="about" aria-labelledby="about-heading" className="about">
@@ -20,11 +20,13 @@ export default function About() {
         </a>
       </div>
       <div className="about-photo">
+        {/* Two pictures of the same room, supplied by the owner: the tall one for phones (the narrow arch), the wide one from 640 px up (where the layout changes). */}
         <Photo
-          name="portfolio-living"
-          alt="Bright living room with a timber sideboard, a tall plant and a large window"
-          sizes="(min-width: 1024px) 40vw, 30vw"
-          position="22% 50%"
+          name="about-mobile"
+          alt="Sunlit living room with a light timber sideboard, a tall potted plant, linen curtains and a large window"
+          sizes="30vw"
+          wide={{ name: 'about-desktop', media: '(min-width: 640px)', sizes: '(min-width: 1024px) 24rem, 38vw' }}
+          className="about-img"
         />
       </div>
     </section>

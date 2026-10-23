@@ -3,6 +3,7 @@ import { ArrowRight, X } from 'lucide-react';
 import { NAV_LINKS } from '../config/site.js';
 import { useActiveSection } from '../hooks/useActiveSection.js';
 import Logo from './Logo.jsx';
+import WhatsAppLink from './WhatsAppLink.jsx';
 import { useQuote } from './quotation/QuoteDialog.jsx';
 
 /**
@@ -88,6 +89,7 @@ export default function Navbar({ homeHref = '', spy = true }) {
         </nav>
 
         <div className="header-actions">
+          <WhatsAppLink className="header-wa" />
           {quoteButton(
             'header-cta',
             <>

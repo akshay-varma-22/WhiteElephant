@@ -31,7 +31,8 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# The video intro and its poster keep their file names when replaced, so cache them for a week (not "forever").
+# The video intro and its poster keep their file names when replaced, so cache them for a week (not "forever"). When one is
+# replaced, raise VIDEO_VERSION in src/components/VideoIntro.jsx: the page then asks for a new address and skips the cached copy.
 [[headers]]
   for = "/videos/*"
   [headers.values]
@@ -42,3 +43,13 @@
   for = "/api/*"
   [headers.values]
     Cache-Control = "no-store"
+
+# ---- One address for search engines and visitors ----------------------
+# The studio's own domain (BUSINESS.url in shared/business.js) is the only public address. Anyone arriving on the old
+# `...netlify.app` address is sent to it, so search engines never see two copies of the site. (Deploy preview addresses
+# such as `<id>--exquisite-beijinho-3476dc.netlify.app` are different host names and are not affected.)
+[[redirects]]
+  from = "https://exquisite-beijinho-3476dc.netlify.app/*"
+  to = "https://www.whiteelephantcreativestudio.in/:splat"
+  status = 301
+  force = true

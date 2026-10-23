@@ -137,7 +137,7 @@ describe('Gmail-style SMTP delivery over a real connection', () => {
     expect(mail.to.value[0].address).toBe('inbox@example.test');
     expect(mail.replyTo.value[0].address).toBe('asha@example.com');
     expect(mail.subject).toBe('New Quotation Lead — Asha Rao — +91 99496 21569');
-    expect(mail.messageId).toMatch(/^<wecs-[0-9a-f]{48}@whiteelephantcreativestudio\.com>$/);
+    expect(mail.messageId).toMatch(/^<wecs-[0-9a-f]{48}@whiteelephantcreativestudio.in>$/);
     // Both plain-text and HTML parts, with every detail the form collects
     expect(mail.text).toContain('Name: Asha Rao');
     expect(mail.text).toContain('Phone: +91 99496 21569');

@@ -6,7 +6,7 @@
  *       service: Gmail (GMAIL_USER + GMAIL_APP_PASSWORD) or Resend (RESEND_API_KEY + MAIL_FROM), plus LEAD_TO_EMAIL.
  *       Use this first, to verify your credentials and inbox BEFORE deploying.
  *
- *   npm run send-test-lead -- --url https://www.whiteelephantcreativestudio.com
+ *   npm run send-test-lead -- --url https://www.whiteelephantcreativestudio.in
  *       Posts the same test lead to a deployed site's /api/quotation endpoint, verifying the
  *       Netlify environment variables. (If you enabled the Turnstile CAPTCHA, this mode is rejected
  *       by design; use --direct, or test through the website form in a browser.)
@@ -150,6 +150,6 @@ async function runRemote(url) {
 if (flag('--direct')) await runDirect();
 else if (value('--url')) await runRemote(value('--url'));
 else {
-  console.log('Usage:\n  npm run send-test-lead -- --direct\n  npm run send-test-lead -- --url https://www.whiteelephantcreativestudio.com');
+  console.log('Usage:\n  npm run send-test-lead -- --direct\n  npm run send-test-lead -- --url https://www.whiteelephantcreativestudio.in');
   process.exit(2);
 }

@@ -109,7 +109,10 @@ test.describe('navigation', () => {
     // The icon row and the experience line are no longer in the hero (the figures moved to the key highlights).
     await expect(hero.getByRole('list')).toHaveCount(0);
     await expect(hero).not.toContainText('Years of Experience');
-    await expect(hero).toContainText('Hyderabad, Telangana');
+    // The line under the button says INDIA (owner's wording, 22 Oct 2026), not the city and state it used to name.
+    await expect(hero.locator('.hero-location-text')).toHaveText('INDIA');
+    await expect(hero).not.toContainText('Hyderabad');
+    await expect(hero).not.toContainText('Telangana');
     // The background photo really loaded.
     await expect.poll(() => hero.locator('img').evaluate((i) => i.complete && i.naturalWidth > 0)).toBe(true);
     await hero.getByRole('button', { name: 'Get a Free Quotation' }).click();
@@ -132,10 +135,12 @@ test.describe('navigation', () => {
     const intro = page.locator('#video');
     await intro.scrollIntoViewIfNeeded();
     const video = intro.locator('video');
-    await expect(video).toHaveAttribute('src', '/videos/interior-loop.mp4');
-    await expect(video).toHaveAttribute('poster', /interior-loop-poster\.webp$/);
-    expect((await page.request.get('/videos/interior-loop.mp4')).status()).toBe(200);
-    expect((await page.request.get('/videos/interior-loop-poster.webp')).status()).toBe(200);
+    // The addresses carry a version number (?v=2 ...): browsers keep these files for a week, so a replaced video only shows up at once
+    // for everyone if its address changes too. The versioned addresses must serve the files.
+    await expect(video).toHaveAttribute('src', /^\/videos\/interior-loop\.mp4\?v=\d+$/);
+    await expect(video).toHaveAttribute('poster', /^\/videos\/interior-loop-poster\.webp\?v=\d+$/);
+    expect((await page.request.get((await video.getAttribute('src')) ?? '')).status()).toBe(200);
+    expect((await page.request.get((await video.getAttribute('poster')) ?? '')).status()).toBe(200);
     // The old clip is gone from the build.
     expect((await page.request.get('/videos/about-studio.mp4')).headers()['content-type'] ?? '').not.toMatch(/video/);
 
@@ -202,7 +207,7 @@ test.describe('navigation', () => {
     await page.waitForTimeout(1500);
     expect(await video.evaluate((v) => ({ paused: v.paused, time: v.currentTime }))).toEqual({ paused: true, time: 0 });
     await expect(intro.getByRole('button')).toHaveCount(0);
-    expect(await video.evaluate((v) => v.poster)).toMatch(/interior-loop-poster\.webp$/);
+    expect(await video.evaluate((v) => v.poster)).toMatch(/interior-loop-poster\.webp\?v=\d+$/);
   });
 
   test('About has the story, a Learn more link and an arched photo on the right', async ({ page }) => {
@@ -220,11 +225,85 @@ test.describe('navigation', () => {
     await expect(about.locator('video')).toHaveCount(0);
   });
 
+  // The line under the hero button: "INDIA" in bold, close to the map pin, and both larger than the design's (owner's request, 22 Oct 2026).
+  // Before: phones 10.9 px text / 16.8 px pin / 6 px gap; wider screens 16.8 px text / 20.8 px pin / 9.6 px gap, normal weight.
+  for (const width of [320, 390, 700, 1280]) {
+    test(`the hero location line is a bold "INDIA", close to a larger map pin, at ${width}px wide`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openSite(page);
+      const m = await page.evaluate(() => {
+        const t = document.querySelector('#home .hero-location-text');
+        const p = document.querySelector('#home .hero-pin');
+        const tr = t.getBoundingClientRect();
+        const pr = p.getBoundingClientRect();
+        const s = getComputedStyle(t);
+        return {
+          text: t.textContent,
+          weight: Number(s.fontWeight),
+          fontSize: parseFloat(s.fontSize),
+          pinHeight: pr.height,
+          gap: tr.left - pr.right,
+          sameLine: Math.abs((tr.top + tr.bottom) / 2 - (pr.top + pr.bottom) / 2) <= 3,
+          insideScreen: tr.right <= document.documentElement.clientWidth,
+          pinIsLeftOfText: pr.right <= tr.left,
+        };
+      });
+      expect(m.text).toBe('INDIA');
+      expect(m.weight, 'thick text').toBeGreaterThanOrEqual(600);
+      expect(m.gap, 'close to the pin (it was 6 px on phones and 9.6 px on wider screens)').toBeLessThanOrEqual(width >= 640 ? 7 : 5);
+      expect(m.gap).toBeGreaterThanOrEqual(2);
+      expect(m.pinIsLeftOfText).toBe(true);
+      expect(m.sameLine).toBe(true);
+      expect(m.insideScreen).toBe(true);
+      expect(m.fontSize, 'larger than before').toBeGreaterThanOrEqual(width >= 640 ? 20 : 13);
+      expect(m.pinHeight, 'larger than before').toBeGreaterThanOrEqual(width >= 640 ? 26 : 20);
+    });
+  }
+
+  // The About picture is art-directed: the owner's tall picture on phones (the narrow arch), the owner's wide picture from 640 px up (where the layout changes).
+  for (const width of [390, 639, 640, 768, 1280, 1920]) {
+    test(`the About arch shows the ${width >= 640 ? 'wide (desktop)' : 'tall (mobile)'} picture at ${width}px wide, filling the arch`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openSite(page);
+      const frame = page.locator('#about .about-photo');
+      await frame.scrollIntoViewIfNeeded();
+      const img = frame.locator('img');
+      await expect(img).toHaveCount(1);
+      await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth > 0)).toBe(true);
+      await expect(frame.locator('picture source')).toHaveAttribute('media', '(min-width: 640px)');
+      const m = await img.evaluate((i) => {
+        const f = i.closest('.about-photo').getBoundingClientRect();
+        const s = getComputedStyle(i);
+        return {
+          current: i.currentSrc,
+          ratio: f.width / f.height,
+          frameWidth: f.width,
+          fit: s.objectFit,
+          position: s.objectPosition,
+          alt: i.alt,
+          boxFillsFrame: Math.abs(i.getBoundingClientRect().width - f.width) < 1.5 && Math.abs(i.getBoundingClientRect().height - f.height) < 1.5,
+        };
+      });
+      expect(m.current).toContain(width >= 640 ? 'about-desktop' : 'about-mobile');
+      expect(m.current).not.toContain(width >= 640 ? 'about-mobile' : 'about-desktop');
+      expect(m.fit).toBe('cover');
+      expect(m.boxFillsFrame, 'the picture fills the whole arch').toBe(true);
+      expect(m.alt).toMatch(/living room.*sideboard.*plant/i);
+      if (width >= 640) {
+        expect(m.ratio, 'the 4:5 arch on wider screens').toBeCloseTo(0.8, 1);
+        expect(m.position).toBe('45% 50%');
+      } else {
+        expect(m.ratio, 'a narrow, tall arch on phones').toBeLessThan(0.45);
+        expect(m.position).toBe('68% 50%');
+      }
+    });
+  }
+
   test('key highlights show the four figures', async ({ page }) => {
     await openSite(page);
     const items = page.locator('#highlights li');
     await expect(items).toHaveCount(4);
-    await expect(items.locator('.highlight-value')).toHaveText(['15+', '400+', '100+', '8+']);
+    await expect(items.locator('.highlight-value')).toHaveText(['15+', '500+', '400+', '150+']);
     await expect(items.locator('.highlight-label')).toHaveText(['Years of Experience', 'Projects Completed', 'Happy Clients', 'Team of Experts']);
   });
 
@@ -243,6 +322,17 @@ test.describe('navigation', () => {
     ]);
     await expect(page.locator('#services').getByRole('button')).toHaveCount(0);
     await expect(page.locator('#services').getByRole('link')).toHaveCount(0);
+    // Furniture is described as custom work only: no list of ready-made pieces (sofa, dining, tables, chairs, desks, beds ...).
+    const furniture = cards.nth(4);
+    await expect(furniture.locator('.arch-desc')).toHaveText('Customised and personalised furnishing.');
+    await expect(furniture).not.toContainText(/sofa|dining|table|chair|desk|bed|seating/i);
+    // All six cards show pictures the owner supplied (not the old stock photos or the video stills).
+    await expect(cards.nth(0).locator('img')).toHaveAttribute('src', /service-residential/);
+    await expect(cards.nth(1).locator('img')).toHaveAttribute('src', /service-commercial/);
+    await expect(cards.nth(2).locator('img')).toHaveAttribute('src', /service-architecture/);
+    await expect(cards.nth(3).locator('img')).toHaveAttribute('src', /service-false-ceiling/);
+    await expect(furniture.locator('img')).toHaveAttribute('src', /service-furniture/);
+    await expect(cards.nth(5).locator('img')).toHaveAttribute('src', /service-renovation/);
     // Clicking a card must not move the page.
     await cards.first().scrollIntoViewIfNeeded();
     const before = await page.evaluate(() => scrollY);
@@ -251,27 +341,77 @@ test.describe('navigation', () => {
     expect(await page.evaluate(() => scrollY)).toBe(before);
   });
 
+  // The False Ceiling and Renovation & Remodeling pictures are tall (902 x 1600 and 1024 x 1536), taller than the arch, so the card shows part of
+  // them. False Ceiling is lined up from the top so the whole lit ceiling stays in view; Renovation shows almost all of its three stacked panels
+  // (before, during, after). Both fill the arch completely (object-fit: cover), with no blur, bars or gaps.
+  const pictures = [
+    { name: 'False Ceiling', index: 3, file: /service-false-ceiling/, size: [902, 1600], top: 0.02, bottom: 0.7, maxBottom: 1 },
+    { name: 'Renovation & Remodeling', index: 5, file: /service-renovation/, size: [1024, 1536], top: 0.08, bottom: 0.9, maxBottom: 1 },
+  ];
+  for (const width of [390, 768, 1280, 1920]) {
+    for (const pic of pictures) {
+      test(`the ${pic.name} card (${width}px wide) shows the owner's picture, framed so its important part is inside the arch`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await openSite(page);
+        const card = page.locator('#services ul.arch-grid > li').nth(pic.index);
+        await card.scrollIntoViewIfNeeded();
+        const img = card.locator('img');
+        await expect(img).toHaveCount(1); // one picture per card: no blurred copy or second layer
+        await expect(img).toHaveAttribute('src', pic.file);
+        await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth > 0)).toBe(true);
+        const m = await img.evaluate((i, [w, h]) => {
+          const b = i.getBoundingClientRect();
+          const s = getComputedStyle(i);
+          const scale = Math.max(b.width / w, b.height / h);
+          const shownHeight = h * scale;
+          const posY = parseFloat(s.objectPosition.split(' ')[1]) / 100;
+          const offset = (shownHeight - b.height) * posY;
+          return { fit: s.objectFit, filter: s.filter, transform: s.transform, shownTop: offset / shownHeight, shownBottom: (offset + b.height) / shownHeight };
+        }, pic.size);
+        expect(m.fit).toBe('cover');
+        expect(m.filter, 'no blur').toBe('none');
+        expect(m.transform, 'not zoomed or shifted').toBe('none');
+        expect(m.shownTop, 'the top of the picture is in view').toBeLessThanOrEqual(pic.top);
+        expect(m.shownBottom, 'enough of the picture is in view').toBeGreaterThanOrEqual(pic.bottom);
+        expect(m.shownBottom, 'the card does not run past the picture').toBeLessThanOrEqual(pic.maxBottom);
+      });
+    }
+  }
+
   test('featured projects: three cards first, filters, View all projects, and the lightbox', async ({ page }) => {
     await openSite(page);
     await page.locator('#projects').scrollIntoViewIfNeeded();
     const tiles = page.locator('#projects ul.project-grid > li');
     await expect(tiles).toHaveCount(3);
     await expect(tiles.first()).toHaveClass(/project-feature/);
+    await expect(page.locator('#projects .project-name')).toHaveText(['Living room concept', 'Workspace concept', 'Personalised furnishing']);
+    // The third card, in the place of the removed side table, shows a wooden work desk (its own picture and description).
+    await expect(tiles.nth(2).locator('img')).toHaveAttribute('src', /portfolio-work-desk/);
+    await expect(tiles.nth(2).locator('img')).toHaveAttribute('alt', /wooden work desk/i);
     // The cards are just the picture with its title: no arrow (or any other icon) in the corner of any image.
     const cardIcons = page.locator('#projects .project-card svg, #projects .project-arrow');
     await expect(cardIcons).toHaveCount(0);
+    // The section ends with its cards and the "View all projects" button: the "Sample images." note and its description are switched
+    // off (the owner asked for them to go; `showPortfolioNotice` in src/config/site.js brings them back).
+    await expect(page.locator('#projects [role="note"]')).toHaveCount(0);
+    await expect(page.locator('#projects')).not.toContainText('Sample images');
+    await expect(page.locator('#projects')).not.toContainText('placeholders that illustrate');
     // View all / show fewer
     const more = page.getByRole('button', { name: /View all projects/i });
     await more.click();
     await expect(tiles).toHaveCount(11);
     await expect(cardIcons).toHaveCount(0);
+    // The "Timber side table" is gone (the owner asked for it to be removed), by title and by picture description.
+    await expect(page.locator('#projects')).not.toContainText(/side table/i);
+    await expect(page.locator('#projects img[alt*="side table" i]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Show fewer projects/i })).toHaveAttribute('aria-expanded', 'true');
     await page.getByRole('button', { name: /Show fewer projects/i }).click();
     await expect(tiles).toHaveCount(3);
     // Filters
     await page.getByRole('button', { name: 'Furniture', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Furniture', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await expect(tiles).toHaveCount(3);
+    await expect(tiles).toHaveCount(3); // personalised furnishing (the work desk), the sculpted timber bench and the carved timber chest
+    await expect(page.locator('#projects .project-name')).toHaveText(['Personalised furnishing', 'Sculpted timber bench', 'Carved timber chest']);
     await expect(page.getByRole('button', { name: /View all projects/i })).toHaveCount(0);
     await page.getByRole('button', { name: 'Renovation', exact: true }).click();
     await expect(tiles).toHaveCount(2);
@@ -536,9 +676,23 @@ test.describe('quality checks', () => {
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Hyderabad/);
     await expect(page.locator('meta[property="og:title"]')).toHaveCount(1);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /og-image\.jpg$/);
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.whiteelephantcreativestudio.com/');
-    const ld = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.whiteelephantcreativestudio.in/');
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /^White Elephant Creative Studio \(White Elephant Interiors\)/);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /index, follow/);
+    // Two structured-data blocks: the business, and the website (its name and other names, for the name shown in search results).
+    const blocks = page.locator('script[type="application/ld+json"]');
+    await expect(blocks).toHaveCount(2);
+    const ld = JSON.parse(await blocks.nth(0).textContent());
+    const site = JSON.parse(await blocks.nth(1).textContent());
     expect(ld['@type']).toBe('LocalBusiness');
+    expect(ld.name).toBe('White Elephant Creative Studio');
+    expect(ld.alternateName).toEqual(['White Elephant Interiors', 'White Elephant']);
+    expect(ld.areaServed).toMatchObject({ '@type': 'City', name: 'Hyderabad' });
+    expect(site['@type']).toBe('WebSite');
+    expect(site.name).toBe('White Elephant Creative Studio');
+    expect(site.alternateName).toEqual(['White Elephant Interiors', 'White Elephant']);
+    expect(site.url).toBe('https://www.whiteelephantcreativestudio.in/');
+    expect(JSON.stringify(site)).not.toContain('sameAs'); // no social profiles are listed: none have been supplied
     expect(ld.address).toMatchObject({ addressLocality: 'Hyderabad', addressRegion: 'Telangana', postalCode: '500090', addressCountry: 'IN' });
     expect(ld.email).toBe('whiteelephantcreativestudio@gmail.com');
     for (const forbidden of ['aggregateRating', 'review', 'openingHours', 'openingHoursSpecification', 'geo', 'priceRange', 'streetAddress', 'award']) {
@@ -548,6 +702,82 @@ test.describe('quality checks', () => {
       const res = await page.request.get(path);
       expect(res.status(), path).toBe(200);
     }
+  });
+
+  // ---- The page's text is in the HTML itself (built in advance), so crawlers that do not run JavaScript, such as most AI assistants' crawlers, can read it ----
+  const textOf = (html) => html.replace(/<!-- -->/g, '').replace(/<(script|style|noscript)[\s\S]*?<\/\1>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#x27;/g, "'").replace(/\s+/g, ' ');
+
+  test('the HTML the server sends (before any JavaScript runs) already contains the page text, headings, services and contact details', async ({ page }) => {
+    const html = await (await page.request.get('/')).text();
+    const root = html.match(/<div id="root">([\s\S]*)<\/div>\s*<noscript>/)?.[1] ?? '';
+    expect(root.length, 'the page is already inside #root').toBeGreaterThan(20_000);
+    const text = textOf(root);
+    expect(text.split(' ').length, 'a full page of words, not an empty shell').toBeGreaterThan(300);
+    // exactly one main heading, plus the section headings
+    expect(root.match(/<h1[\s>]/g)).toHaveLength(1);
+    expect(root.match(/<h2[\s>]/g)?.length ?? 0).toBeGreaterThanOrEqual(6);
+    for (const phrase of [
+      'Thoughtful Spaces for Every Story.',
+      'Spaces for Every Need',
+      'Residential Interiors',
+      'Commercial Interiors',
+      'Architecture',
+      'False Ceiling',
+      'Furniture Design',
+      'Renovation & Remodeling',
+      'Customised and personalised furnishing.',
+      '+91 99496 21569',
+      '+91 76720 20294',
+      'whiteelephantcreativestudio@gmail.com',
+      'Hyderabad',
+      'All rights reserved',
+    ]) {
+      expect(text, phrase).toContain(phrase);
+    }
+    // The About picture's two versions are in the built-in HTML too (a wide-screen source and a phone picture).
+    expect(root).toMatch(/<source[^>]*media="\(min-width: 640px\)"[^>]*about-desktop/i);
+    expect(root).toMatch(/<img[^>]*about-mobile/i);
+    // The head still has its title, description, canonical address and both structured-data blocks.
+    expect(html).toContain('<title>White Elephant Creative Studio | Interior Design in Hyderabad</title>');
+    expect(html.match(/<script type="application\/ld\+json">/g)).toHaveLength(2);
+    // The pictures written into the HTML point at real files.
+    const srcs = [...root.matchAll(/<img[^>]*\ssrc="([^"]+)"/g)].map((m) => m[1]);
+    expect(srcs.length).toBeGreaterThanOrEqual(10);
+    for (const src of new Set(srcs)) expect((await page.request.get(src)).status(), src).toBe(200);
+  });
+
+  test('with JavaScript switched off the page is still there: headline, services, pictures and contact details are visible', async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ baseURL, javaScriptEnabled: false, viewport: { width: 1280, height: 900 } });
+    const page = await context.newPage();
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Thoughtful');
+    await expect(page.getByRole('heading', { level: 2, name: 'Spaces for Every Need' })).toBeVisible();
+    for (const name of ['Residential Interiors', 'Commercial Interiors', 'Architecture', 'False Ceiling', 'Furniture Design', 'Renovation & Remodeling']) {
+      await expect(page.locator('#services').getByRole('heading', { level: 3, name: new RegExp(name.replace('&', '&')) }), name).toBeVisible();
+    }
+    await expect(page.locator('#contact').getByRole('link', { name: '+91 76720 20294' })).toBeVisible();
+    await expect(page.getByRole('contentinfo')).toContainText('All rights reserved');
+    await context.close();
+  });
+
+  test('the browser takes over the built-in HTML without errors or rebuilding it (no hydration problems, page content kept, form still works)', async ({ page }) => {
+    const problems = [];
+    page.on('console', (m) => ['error', 'warning'].includes(m.type()) && problems.push(`${m.type()}: ${m.text()}`));
+    page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
+    // Count how many page nodes get thrown away while the page starts up: taking over the built-in HTML removes almost none; building the page again would remove them all.
+    await page.addInitScript(() => {
+      window.__removedNodes = 0;
+      new MutationObserver((records) => records.forEach((r) => (window.__removedNodes += r.removedNodes.length))).observe(document, { childList: true, subtree: true });
+    });
+    await openSite(page);
+    await page.waitForTimeout(800);
+    expect(problems, 'no console errors or warnings, in particular none about the page not matching').toEqual([]);
+    const removed = await page.evaluate(() => window.__removedNodes);
+    expect(removed, `${removed} nodes were thrown away at start-up (0 when the built-in HTML is reused, 8+ when the page is rebuilt)`).toBeLessThanOrEqual(1);
+    await expect(page.locator('#services ul.arch-grid > li')).toHaveCount(6);
+    // Interactive after the take-over: the popup opens.
+    await page.getByRole('banner').getByRole('button', { name: 'Get a Quote', exact: true }).click();
+    await expect(quoteDialog(page)).toBeVisible();
   });
 
   test('automated accessibility scan (axe) finds no serious or critical violations on the home page', async ({ page }) => {
@@ -712,7 +942,7 @@ test.describe('the quotation popup', () => {
     const dialog = quoteDialog(page);
     await expect(dialog).toContainText('Let’s connect?');
     await expect(dialog).not.toContainText('Prefer to talk first');
-    await expect(dialog.locator('.quote-call a')).toHaveText(['+91 99496 21569', '+91 76720 20294']);
+    await expect(dialog.locator('.quote-call li a')).toHaveText(['+91 99496 21569', '+91 76720 20294']);
     await expect(dialog.getByRole('heading', { level: 2 })).toHaveText('Request your free quotation');
     await expect(dialog.locator('.quote-intro')).toHaveText('Leave your name, mobile number and email and our team will get in touch.');
     // All three fields are marked as required (a star each), and there is no eyebrow line above the title.
@@ -792,6 +1022,243 @@ test.describe('the quotation popup', () => {
     });
     await expect(dialog).toBeVisible();
   });
+});
+
+/*
+ * WhatsApp buttons: a frameless brown WhatsApp logo to the left of "Get a Quote" in the header, and the same logo beside the two phone
+ * numbers in the quotation popup. Both open a WhatsApp chat with 7672020294 and a message that is already typed.
+ */
+const WA_MESSAGE =
+  'Hello White Elephant Creative Studio,\n\nI’m interested in your interior design services and would appreciate it if you could share more details about your offerings.\n\nI look forward to hearing from you.\n\nThank you!';
+const WA_HREF = 'https://wa.me/917672020294?text=' + encodeURIComponent(WA_MESSAGE);
+
+test.describe('WhatsApp buttons', () => {
+  test('the header has a WhatsApp logo to the left of "Get a Quote", with no circle or frame, in the site\'s brown', async ({ page }) => {
+    await openSite(page);
+    const wa = page.getByRole('banner').getByRole('link', { name: /WhatsApp/ });
+    await expect(wa).toBeVisible();
+    await expect(wa).toHaveAttribute('href', WA_HREF);
+    await expect(wa).toHaveAttribute('target', '_blank');
+    await expect(wa).toHaveAttribute('rel', /noopener/);
+    await expect(wa).toHaveAccessibleName(/Chat with us on WhatsApp/);
+    await expect(wa.locator('svg')).toBeVisible();
+
+    const m = await page.evaluate(() => {
+      const link = document.querySelector('.header-wa');
+      const cta = document.querySelector('.header-cta');
+      const header = document.querySelector('.site-header');
+      const l = link.getBoundingClientRect();
+      const c = cta.getBoundingClientRect();
+      const s = getComputedStyle(link);
+      const lin = (v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+      const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+      const rgb = (x) => x.match(/[\d.]+/g).slice(0, 3).map(Number);
+      const a = lum(rgb(s.color));
+      const b = lum(rgb(getComputedStyle(header).backgroundColor));
+      return {
+        left: l.right <= c.left,
+        gap: c.left - l.right,
+        sameMiddle: Math.abs((l.top + l.bottom) / 2 - (c.top + c.bottom) / 2),
+        border: s.borderTopWidth,
+        radius: s.borderTopLeftRadius,
+        background: s.backgroundColor,
+        color: s.color,
+        contrast: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+      };
+    });
+    expect(m.left, 'the logo is to the left of the Get a Quote button').toBe(true);
+    expect(m.gap).toBeLessThan(40);
+    expect(m.sameMiddle).toBeLessThanOrEqual(3);
+    expect(m.border, 'no frame').toBe('0px');
+    expect(m.radius, 'no circle').toBe('0px');
+    expect(m.background, 'no filled circle behind it').toBe('rgba(0, 0, 0, 0)');
+    expect(m.color, "the site's brown (copper), not WhatsApp green").toBe('rgb(104, 70, 43)');
+    expect(m.contrast, 'the logo stands out from the header (needs 3:1)').toBeGreaterThanOrEqual(3);
+  });
+
+  test('the quotation popup has the same logo beside the two phone numbers, on the same row, with no frame', async ({ page }) => {
+    await openSite(page);
+    await openQuote(page);
+    const dialog = quoteDialog(page);
+    const wa = dialog.getByRole('link', { name: /WhatsApp/ });
+    await expect(wa).toBeVisible();
+    await expect(wa).toHaveAttribute('href', WA_HREF);
+    await expect(wa).toHaveAttribute('target', '_blank');
+    await expect(wa).toHaveAttribute('rel', /noopener/);
+    await expect(dialog.locator('.quote-call li a')).toHaveText(['+91 99496 21569', '+91 76720 20294']); // the numbers are still there, as phone links
+    await expect(dialog.getByRole('link', { name: '+91 76720 20294' })).toHaveAttribute('href', 'tel:+917672020294');
+    await page.waitForTimeout(400); // the opening animation
+    const m = await dialog.evaluate((d) => {
+      const call = d.querySelector('.quote-call');
+      const link = call.querySelector('.quote-wa');
+      const numbers = [...call.querySelectorAll('li a')].map((a) => a.getBoundingClientRect());
+      const l = link.getBoundingClientRect();
+      const s = getComputedStyle(link);
+      const middle = (r) => (r.top + r.bottom) / 2;
+      return {
+        rightOfNumbers: numbers.every((n) => l.left >= n.right),
+        sameRow: numbers.every((n) => Math.abs(middle(n) - middle(l)) <= 3),
+        inside: l.right <= d.getBoundingClientRect().right,
+        border: s.borderTopWidth,
+        radius: s.borderTopLeftRadius,
+        color: s.color,
+        size: l.width,
+        scrolls: d.scrollHeight > d.clientHeight + 1,
+      };
+    });
+    expect(m.rightOfNumbers).toBe(true);
+    expect(m.sameRow).toBe(true);
+    expect(m.inside).toBe(true);
+    expect(m.border).toBe('0px');
+    expect(m.radius).toBe('0px');
+    expect(m.color).toBe('rgb(104, 70, 43)');
+    expect(m.size).toBeGreaterThanOrEqual(40);
+    expect(m.scrolls, 'adding the logo must not make the popup scroll').toBe(false);
+  });
+
+  test('tapping either logo opens a new tab on WhatsApp with the message ready (WhatsApp itself is not contacted in this test)', async ({ page, context }) => {
+    const opened = [];
+    await context.route('https://wa.me/**', (route) => {
+      opened.push(route.request().url());
+      return route.fulfill({ status: 200, contentType: 'text/html', body: '<title>WhatsApp (test double)</title>' });
+    });
+    await openSite(page);
+
+    const [headerTab] = await Promise.all([context.waitForEvent('page'), page.getByRole('banner').getByRole('link', { name: /WhatsApp/ }).click()]);
+    await headerTab.waitForLoadState();
+    expect(headerTab.url()).toBe(WA_HREF);
+    await headerTab.close();
+    expect(new URL(page.url()).pathname, 'the site itself stays where it was').toBe('/');
+
+    await openQuote(page);
+    const [popupTab] = await Promise.all([context.waitForEvent('page'), quoteDialog(page).getByRole('link', { name: /WhatsApp/ }).click()]);
+    await popupTab.waitForLoadState();
+    expect(popupTab.url()).toBe(WA_HREF);
+    await popupTab.close();
+    await expect(quoteDialog(page), 'the popup is still open behind the new tab').toBeVisible();
+    expect(opened).toEqual([WA_HREF, WA_HREF]);
+    const text = new URL(opened[0]).searchParams.get('text');
+    expect(text, "the owner's exact message, line breaks included, is what WhatsApp gets").toBe(WA_MESSAGE);
+    expect(text).toContain('interior design services');
+  });
+
+  test('on a computer screen there is no bottom bar: the header logo is the only WhatsApp logo on the page (the popup has its own)', async ({ page }) => {
+    await openSite(page);
+    await page.evaluate(() => window.scrollBy(0, 1400));
+    await expect(page.locator('.fixed.inset-x-0.bottom-0')).toBeHidden();
+    await expect(page.getByRole('link', { name: /WhatsApp/ })).toHaveCount(1);
+  });
+
+  // Does everything in the header fit on one line, in order, inside the screen? (The WhatsApp logo is only there from 768 px wide: on phones the
+  // sticky bar at the bottom has it.)
+  const headerFits = (page) =>
+    page.evaluate(() => {
+      const R = (e) => e.getBoundingClientRect();
+      const logo = R(document.querySelector('.site-logo'));
+      const waEl = document.querySelector('.header-wa');
+      const waShown = getComputedStyle(waEl).display !== 'none';
+      const wa = R(waEl);
+      const ctaEl = document.querySelector('.header-cta');
+      const cta = R(ctaEl);
+      const ctaStyle = getComputedStyle(ctaEl);
+      const menu = document.querySelector('.site-header button[aria-controls="mobile-menu"]');
+      const menuBox = menu && menu.offsetParent !== null ? R(menu) : null;
+      const lastRight = (menuBox ?? cta).right;
+      const screenWidth = document.documentElement.clientWidth;
+      const afterWa = waShown ? wa.right <= cta.left : true;
+      return {
+        waShown,
+        order: logo.right <= (waShown ? wa.left : cta.left) && afterWa && cta.right <= (menuBox ? menuBox.left : screenWidth),
+        inside: lastRight <= screenWidth,
+        spare: Math.round(screenWidth - lastRight),
+        sideways: document.documentElement.scrollWidth - innerWidth,
+        waWidth: wa.width,
+        waMiddleOffset: Math.abs((wa.top + wa.bottom) / 2 - (cta.top + cta.bottom) / 2),
+        ctaHeight: cta.height,
+        ctaPaddingLeft: parseFloat(ctaStyle.paddingLeft),
+        ctaFontSize: parseFloat(ctaStyle.fontSize),
+      };
+    });
+
+  for (const width of [768, 1024, 1920]) {
+    test(`at ${width}px wide the header holds the logo, the WhatsApp logo and Get a Quote in order`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openSite(page);
+      const header = await headerFits(page);
+      expect(header.waShown, 'the header has the WhatsApp logo from 768 px wide').toBe(true);
+      expect(header.order, 'nothing overlaps in the header').toBe(true);
+      expect(header.inside).toBe(true);
+      expect(header.sideways).toBeLessThanOrEqual(0);
+      expect(header.waWidth).toBeGreaterThanOrEqual(40);
+      expect(header.waMiddleOffset).toBeLessThanOrEqual(3);
+    });
+  }
+
+  for (const width of [640, 700, 767]) {
+    test(`at ${width}px wide (a phone or a small tablet) the header has no WhatsApp logo: the bottom bar has it`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openSite(page);
+      const header = await headerFits(page);
+      expect(header.waShown).toBe(false);
+      await expect(page.getByRole('banner').getByRole('link', { name: /WhatsApp/ })).toHaveCount(0);
+      expect(header.order, 'logo, Get a Quote and the menu button fit in order').toBe(true);
+      expect(header.inside).toBe(true);
+      // The sticky bar (shown below 768 px, once the hero is scrolled past) carries the logo instead.
+      await page.locator('#about').scrollIntoViewIfNeeded();
+      await page.evaluate(() => window.scrollBy(0, 600));
+      await expect(page.locator('.fixed.inset-x-0.bottom-0').getByRole('link', { name: /WhatsApp/ })).toBeVisible();
+    });
+  }
+
+  // The popup row: label, the two numbers and the logo.
+  for (const width of [320, 360, 390, 412, 539, 599, 600, 700, 1280]) {
+    test(`at ${width}px wide the popup row holds the logo beside the numbers (or beside the label on a phone), inside the popup`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openSite(page);
+      await openQuote(page);
+      await page.waitForTimeout(400);
+      const row = await quoteDialog(page).evaluate((d) => {
+        const call = d.querySelector('.quote-call');
+        const box = d.getBoundingClientRect();
+        const wa = call.querySelector('.quote-wa').getBoundingClientRect();
+        const label = call.querySelector('p').getBoundingClientRect();
+        const numbers = [...call.querySelectorAll('li a')].map((a) => a.getBoundingClientRect());
+        const middle = (r) => (r.top + r.bottom) / 2;
+        return {
+          inside: wa.right <= box.right && wa.left >= box.left && numbers.every((n) => n.right <= box.right && n.left >= box.left),
+          withNumbers: numbers.every((n) => Math.abs(middle(n) - middle(wa)) <= 3),
+          withLabel: Math.abs(middle(label) - middle(wa)) <= 3,
+          numbersBelow: numbers.every((n) => n.top >= wa.bottom - 2),
+        };
+      });
+      expect(row.inside, 'everything stays inside the popup').toBe(true);
+      // From 600 px wide: label, numbers and logo on one row. On a phone: label and logo on one row, the numbers under them.
+      if (width >= 600) expect(row.withNumbers).toBe(true);
+      else {
+        expect(row.withLabel).toBe(true);
+        expect(row.numbersBelow).toBe(true);
+      }
+    });
+  }
+
+  // Phones: tested in the phone emulation (overlay scrollbars, like a real phone), where the screen is the full width.
+  for (const width of [320, 360, 375, 390, 393, 412]) {
+    test(`@mobile at ${width}px wide the header has just the logo, a compact Get a Quote and the menu button (no WhatsApp logo), all on screen`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await openSite(page);
+      const header = await headerFits(page);
+      expect(header.waShown, 'the WhatsApp logo is in the bottom bar, not the top bar').toBe(false);
+      await expect(page.getByRole('banner').getByRole('link', { name: /WhatsApp/ })).toHaveCount(0);
+      expect(header.order, 'nothing overlaps in the header').toBe(true);
+      expect(header.inside, `the menu button must end inside the screen (spare ${header.spare}px)`).toBe(true);
+      expect(header.sideways).toBeLessThanOrEqual(0);
+      // "Get a Quote" is a little smaller than it was (it was 35 px high with 23 px of padding each side at 390 px; the label stays readable).
+      expect(header.ctaHeight, 'compact').toBeLessThanOrEqual(33.5);
+      expect(header.ctaHeight, 'still easy to tap').toBeGreaterThanOrEqual(30);
+      expect(header.ctaPaddingLeft).toBeLessThanOrEqual(22);
+      expect(header.ctaFontSize, 'the label stays readable').toBeGreaterThanOrEqual(9);
+    });
+  }
 });
 
 test.describe('mobile', () => {
@@ -921,4 +1388,149 @@ test.describe('mobile', () => {
     await page.locator('#contact').scrollIntoViewIfNeeded();
     await expect(bar).toBeHidden();
   });
+
+  // The sticky bar on phones: Call us | WhatsApp logo | Free Quotation.
+  const showCallBar = async (page) => {
+    await page.locator('#about').scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, 600));
+    await expect(page.getByRole('link', { name: 'Call us' })).toBeVisible();
+  };
+  const callBar = (page) => page.locator('.fixed.inset-x-0.bottom-0');
+  // The divider is drawn on the logo's left edge (a ::before), so measure it through the logo link's computed style.
+  const barDivider = (page) =>
+    callBar(page).evaluate((bar) => {
+      const [call, link] = [...bar.children];
+      const cs = getComputedStyle(link, '::before');
+      const textNode = [...call.childNodes].find((n) => n.nodeType === 3);
+      const range = document.createRange();
+      range.selectNodeContents(textNode);
+      const textEnd = range.getBoundingClientRect().right - parseFloat(getComputedStyle(call).letterSpacing || '0'); // the last letter is followed by letter-spacing
+      const lineX = link.getBoundingClientRect().left + parseFloat(cs.left || '0');
+      const iconLeft = link.querySelector('svg').getBoundingClientRect().left;
+      return {
+        exists: cs.content !== 'none' && cs.content !== 'normal',
+        width: parseFloat(cs.width),
+        height: parseFloat(cs.height),
+        top: parseFloat(cs.top),
+        bottom: parseFloat(cs.bottom),
+        background: cs.backgroundImage,
+        gapBefore: lineX - textEnd,
+        gapAfter: iconLeft - lineX,
+        pointerEvents: cs.pointerEvents,
+      };
+    });
+
+  test('@mobile the sticky bar has the WhatsApp logo between "Call us" and "Free Quotation": same brown, no frame, opens WhatsApp with the message ready', async ({ page, context }) => {
+    const opened = [];
+    await context.route('https://wa.me/**', (route) => {
+      opened.push(route.request().url());
+      return route.fulfill({ status: 200, contentType: 'text/html', body: '<title>WhatsApp (test double)</title>' });
+    });
+    await openSite(page);
+    const bar = callBar(page);
+    const wa = bar.getByRole('link', { name: /WhatsApp/ });
+    await expect(wa, 'not there while the bar is hidden over the hero').toHaveCount(0);
+
+    await showCallBar(page);
+    await expect(wa).toBeVisible();
+    await expect(wa).toHaveAttribute('href', WA_HREF);
+    await expect(wa).toHaveAttribute('target', '_blank');
+    await expect(wa).toHaveAttribute('rel', /noopener/);
+    await expect(wa).toHaveAccessibleName(/Chat with us on WhatsApp/);
+    await expect(wa.locator('svg')).toBeVisible();
+
+    const m = await bar.evaluate((b) => {
+      const [call, link, quote] = [...b.children];
+      const r = (e) => e.getBoundingClientRect();
+      const s = getComputedStyle(link);
+      return {
+        order: r(call).right <= r(link).left + 0.5 && r(link).right <= r(quote).left + 0.5,
+        sameRow: [call, link, quote].every((c) => r(c).top === r(call).top && r(c).height === r(call).height),
+        callText: call.textContent.trim(),
+        quoteText: quote.textContent.trim(),
+        border: s.borderTopWidth,
+        radius: s.borderTopLeftRadius,
+        background: s.backgroundColor,
+        color: s.color,
+        glyph: r(link.querySelector('svg')).width,
+        tap: Math.min(r(link).width, r(link).height),
+      };
+    });
+    expect(m.order, 'Call us, then WhatsApp, then Free Quotation').toBe(true);
+    expect(m.sameRow).toBe(true);
+    expect(m.callText).toBe('Call us');
+    expect(m.quoteText).toBe('Free Quotation');
+    expect(m.border, 'no frame').toBe('0px');
+    expect(m.radius, 'no circle').toBe('0px');
+    expect(m.background, 'nothing filled behind the logo').toBe('rgba(0, 0, 0, 0)');
+    expect(m.color, "the site's brown, like the header").toBe('rgb(104, 70, 43)');
+    expect(m.glyph).toBeGreaterThanOrEqual(22);
+    expect(m.tap, 'big enough to tap').toBeGreaterThanOrEqual(44);
+
+    // A fine line between "Call us" and the logo: 1px wide, centred, short of the top and bottom of the bar.
+    const line = await barDivider(page);
+    expect(line.exists, 'there is a divider').toBe(true);
+    expect(line.width).toBe(1);
+    expect(line.top, 'does not touch the top of the bar').toBeGreaterThanOrEqual(12);
+    expect(line.bottom, 'does not touch the bottom of the bar').toBeGreaterThanOrEqual(12);
+    expect(Math.abs(line.top - line.bottom), 'centred up and down').toBeLessThanOrEqual(1);
+    expect(line.height).toBeGreaterThanOrEqual(18);
+    expect(line.height, 'a short line, not the full height').toBeLessThanOrEqual(32);
+    expect(line.background, 'a gradient that fades at both ends').toContain('linear-gradient');
+
+    // The other two buttons still do their jobs.
+    await expect(bar.getByRole('link', { name: 'Call us' })).toHaveAttribute('href', 'tel:+919949621569');
+    await expect(bar.getByRole('button', { name: 'Free Quotation', exact: true })).toBeVisible();
+
+    const [tab] = await Promise.all([context.waitForEvent('page'), wa.tap()]);
+    await tab.waitForLoadState();
+    expect(tab.url()).toBe(WA_HREF);
+    await tab.close();
+    expect(opened).toEqual([WA_HREF]);
+    await expect(quoteDialog(page), 'the quotation popup does not open from the WhatsApp logo').toBeHidden();
+
+    // It goes away with the rest of the bar over the quote banner and the contact section.
+    await page.locator('#get-quote').scrollIntoViewIfNeeded();
+    await expect(wa).toHaveCount(0);
+    await expect.poll(() => callBarIsAway(page)).toBe(true);
+  });
+
+  for (const width of [320, 360, 375, 390, 412]) {
+    test(`@mobile at ${width}px wide the sticky bar fits all three: Call us, the WhatsApp logo and Free Quotation, none cut off`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await openSite(page);
+      await showCallBar(page);
+      const m = await callBar(page).evaluate((b) => {
+        const screenWidth = document.documentElement.clientWidth;
+        return [...b.children].map((cell) => {
+          const box = cell.getBoundingClientRect();
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          const content = range.getBoundingClientRect();
+          return {
+            name: cell.textContent.trim() || 'WhatsApp logo',
+            insideScreen: box.left >= 0 && box.right <= screenWidth + 0.5,
+            contentInsideCell: content.left >= box.left - 0.5 && content.right <= box.right + 0.5,
+            clipped: cell.scrollWidth > cell.clientWidth,
+            height: box.height,
+            sideways: document.documentElement.scrollWidth - innerWidth,
+          };
+        });
+      });
+      expect(m.map((c) => c.name)).toEqual(['Call us', 'WhatsApp logo', 'Free Quotation']);
+      // The fine line sits midway between the end of "Call us" and the logo (within 2 px), and ignores taps.
+      const line = await barDivider(page);
+      expect(line.exists).toBe(true);
+      expect(Math.abs(line.gapBefore - line.gapAfter), `room left of the line ${line.gapBefore.toFixed(1)} px, right ${line.gapAfter.toFixed(1)} px`).toBeLessThanOrEqual(2);
+      expect(line.gapBefore).toBeGreaterThanOrEqual(12);
+      expect(line.pointerEvents).toBe('none');
+      for (const cell of m) {
+        expect(cell.insideScreen, `${cell.name} is inside the screen`).toBe(true);
+        expect(cell.contentInsideCell, `${cell.name} fits in its own part of the bar`).toBe(true);
+        expect(cell.clipped, `${cell.name} is not cut off`).toBe(false);
+        expect(cell.height).toBeGreaterThanOrEqual(56);
+        expect(cell.sideways).toBeLessThanOrEqual(0);
+      }
+    });
+  }
 });

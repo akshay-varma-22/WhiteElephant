@@ -3,7 +3,8 @@
  *
  * IMPORTANT: every entry below currently uses a SAMPLE placeholder image (see
  * src/assets/photos/CREDITS.md) and a generic title. None of them is a completed
- * White Elephant Creative Studio project (a note above the gallery says so; see SITE.showPortfolioNotice).
+ * White Elephant Creative Studio project (a note at the end of the gallery can say so; it is currently switched off,
+ * see SITE.showPortfolioNotice in src/config/site.js).
  *
  * To replace one with a real project: drop the photo into src/assets/photos/, point
  * `photo` at its file name (without extension), edit `title` / `caption`, and set
@@ -33,13 +34,13 @@ export const PORTFOLIO_ITEMS = [
     sample: true,
   },
   {
-    id: 'side-table',
+    id: 'personalised-furnishing',
     category: 'Furniture',
-    title: 'Timber side table',
-    caption: 'A compact piece combining a tabletop and open shelf.',
-    photo: 'portfolio-side-table',
-    aspect: 'aspect-[4/3]',
-    alt: 'Wooden side table with an integrated book shelf and a tray of cups on top',
+    title: 'Personalised furnishing',
+    caption: 'A timber work desk made to measure for the room and the person who uses it.',
+    photo: 'portfolio-work-desk',
+    aspect: 'aspect-[3/2]',
+    alt: 'Wooden work desk and chair against a timber-slat wall, with a blue table lamp and a framed picture',
     sample: true,
   },
   {

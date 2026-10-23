@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react';
-import { BUSINESS } from '../config/site.js';
+import { SITE } from '../config/site.js';
 import Photo from './Photo.jsx';
 import { useQuote } from './quotation/QuoteDialog.jsx';
 
@@ -50,9 +50,7 @@ export default function Hero() {
             />
             <circle cx="12" cy="8.8" r="2.7" fill="#efe2d1" />
           </svg>
-          <span className="hero-location-text">
-            {BUSINESS.address.locality}, {BUSINESS.address.region}
-          </span>
+          <span className="hero-location-text">{SITE.heroLocation}</span>
         </p>
       </div>
     </section>

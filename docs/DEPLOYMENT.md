@@ -12,7 +12,7 @@ re-check the linked pages before relying on a number.
 | --- | --- | --- |
 | A **Netlify** account | Hosts the site and runs the form function | Credit-based plans; a low-traffic site is expected to use very little, but confirm in your Netlify billing page. |
 | **A way to send email** — choose one (section 2): **Gmail with an App Password** *(simplest, no extra service)* or **Resend** | Delivers each lead to the studio inbox | Gmail: free, about 500 messages/day for a regular account. Resend: free plan 100/day, 3,000/month ([limits](https://resend.com/docs/knowledge-base/resend-sending-limits)). |
-| Access to the **DNS settings** of whiteelephantcreativestudio.com | Custom domain (and Resend domain verification, if you use Resend) | Usually at your domain registrar. |
+| Access to the **DNS settings** of whiteelephantcreativestudio.in | Custom domain (and Resend domain verification, if you use Resend) | Usually at your domain registrar. |
 | The inbox `whiteelephantcreativestudio@gmail.com` | Receives leads | — |
 | (Optional) A **Cloudflare** account | Free Turnstile CAPTCHA | See section 9. |
 | (Optional) A **GitHub** account | Auto-deploy on every change | You can deploy without it (section 4, option B). |
@@ -28,7 +28,7 @@ on the server from an environment variable and is never sent to a visitor’s br
 npm install
 npm run dev:mock      # try everything with a FAKE email service (no credentials, nothing real is sent)
 npm test              # unit, component and SMTP-protocol tests
-npm run build         # production build into dist/
+npm run build         # production build into dist/ (3 steps: the site, the same page built for Node, then the page's HTML is written into dist/index.html)
 npm run preview       # serve the production build locally
 ```
 
@@ -74,7 +74,7 @@ How it behaves:
   change this, and going over blocks sending for up to a day. One lead = one message (two if you enable customer confirmations).
 * **If the password stops working** — Google revokes **all** app passwords whenever the account’s Google password is changed —
   visitors will see the “couldn’t send, please call us” message and **no lead will arrive** until you create a new app password,
-  update it in Netlify, and redeploy. Run `npm run send-test-lead -- --url https://www.whiteelephantcreativestudio.com`
+  update it in Netlify, and redeploy. Run `npm run send-test-lead -- --url https://www.whiteelephantcreativestudio.in`
   occasionally (for example monthly) to check.
 * **Duplicates:** unlike Resend, SMTP has no built-in duplicate protection. The site gives each message a fixed Message-ID and
   remembers recently sent ones while the server instance is warm, so a visitor’s retry normally cannot create a second email.
@@ -88,9 +88,9 @@ How it behaves:
    * **Quick start (testing only):** leave `MAIL_FROM=White Elephant Website <onboarding@resend.dev>`. Resend only lets this test
      sender deliver to the address that **owns the Resend account** ([errors reference](https://resend.com/docs/api-reference/errors)) —
      hence signing up with the studio’s Gmail. Leads may land in Spam, and customer confirmation emails can’t work.
-   * **Recommended for launch:** dashboard → *Domains* → *Add Domain* → `whiteelephantcreativestudio.com` (Resend suggests a
+   * **Recommended for launch:** dashboard → *Domains* → *Add Domain* → `whiteelephantcreativestudio.in` (Resend suggests a
      subdomain such as `updates.…`). Add the DNS records the dashboard displays (**copy exactly what it shows**), click *Verify*,
-     then set `MAIL_FROM=White Elephant Website <leads@updates.whiteelephantcreativestudio.com>`. Adding DMARC afterwards helps
+     then set `MAIL_FROM=White Elephant Website <leads@updates.whiteelephantcreativestudio.in>`. Adding DMARC afterwards helps
      ([Resend domains](https://resend.com/docs/dashboard/domains/introduction)).
 4. In `.env`: `MAIL_PROVIDER=resend`, `RESEND_API_KEY=…`, `MAIL_FROM=…`, `LEAD_TO_EMAIL=…`.
 
@@ -169,7 +169,7 @@ Netlify → your site → **Project configuration → Environment variables → 
 | `GMAIL_USER` | the sending Gmail address | **Gmail option.** |
 | `GMAIL_APP_PASSWORD` | the 16-character app password | **Gmail option. Tick *Contains secret values*.** |
 | `RESEND_API_KEY` | your Resend key | **Resend option.** Tick *Contains secret values*. |
-| `MAIL_FROM` | e.g. `White Elephant Website <leads@updates.whiteelephantcreativestudio.com>` | **Resend option** (ignored for Gmail). |
+| `MAIL_FROM` | e.g. `White Elephant Website <leads@updates.whiteelephantcreativestudio.in>` | **Resend option** (ignored for Gmail). |
 | `SEND_CUSTOMER_CONFIRMATION` | `false` | See section 10 before enabling. |
 | `TURNSTILE_SECRET_KEY`, `VITE_TURNSTILE_SITE_KEY` | from Cloudflare | Optional; see section 9. |
 
@@ -193,15 +193,32 @@ built site for leaked secrets.)
 
 ## 6. Custom domain and DNS (you)
 
-Netlify → **Domain management → Add a domain** → `whiteelephantcreativestudio.com`. Make **`www.whiteelephantcreativestudio.com`
-the primary domain** (Netlify recommends a subdomain as primary when you use external DNS, and the bare domain then
-redirects to it). At your DNS provider ([Netlify docs](https://docs.netlify.com/manage/domains/configure-domains/configure-external-dns/)):
+Netlify → **Domain management → Add a domain** → `whiteelephantcreativestudio.in`. **Current setup (21 Oct 2026):** the primary domain is
+`www.whiteelephantcreativestudio.in`; the bare `whiteelephantcreativestudio.in` redirects to it, HTTP redirects to HTTPS (HTTPS is forced, with a
+Let’s Encrypt certificate that Netlify renews by itself), and the site's canonical address, sitemap and search data all use the `www` address.
+If you keep the DNS at another provider, these are the records ([Netlify docs](https://docs.netlify.com/manage/domains/configure-domains/configure-external-dns/)):
 
 | Host | Type | Value |
 | --- | --- | --- |
 | `www` | `CNAME` | your Netlify subdomain, e.g. `your-site.netlify.app` (Netlify displays the exact value) |
 | `@` (apex) | `ALIAS` / `ANAME` / flattened CNAME | `apex-loadbalancer.netlify.com` *(preferred)* |
 | `@` (apex) | `A` | `75.2.60.5` *(fallback if your provider has no ALIAS)* |
+
+**The studio's domain is `whiteelephantcreativestudio.in`, bought at GoDaddy (21 Oct 2026), and its nameservers were moved to Netlify the same day**
+(Netlify DNS: `dns1`–`dns4.p03.nsone.net`; the .in registry showed the new nameservers immediately, while resolvers that had cached the old
+GoDaddy answer took longer). The code, sitemap, robots.txt and search data use `https://www.whiteelephantcreativestudio.in`. Two ways to connect a domain:
+
+* **Easiest, recommended — let Netlify manage the DNS.** In Netlify: *Domain management → Add a domain* → `whiteelephantcreativestudio.in` →
+  *Set up Netlify DNS*; Netlify shows four nameservers. In GoDaddy: *My Products → the domain → DNS → Nameservers → Change nameservers → Enter my
+  own nameservers (advanced)* → paste the four Netlify nameservers → Save. Netlify then creates every record (apex and `www`) and the HTTPS
+  certificate by itself. Only use this if the domain has no email or other services on GoDaddy that depend on its DNS records.
+* **Keep DNS at GoDaddy.** In GoDaddy *DNS → Records*, delete the default “Parked” `A` record for `@` and the default `www` record, then add `www`
+  `CNAME` → `exquisite-beijinho-3476dc.netlify.app` and `@` `A` → `75.2.60.5` (GoDaddy has no ALIAS at the apex). Then, as above, `www` is the
+  primary domain in Netlify and the bare domain redirects to it.
+
+A brand-new domain can take from minutes to several hours to appear on the internet at all (on 21 Oct 2026, right after the purchase, public
+resolvers still answered “domain does not exist”). If it still does not resolve after a day, check GoDaddy for a pending purchase or an
+unanswered verification email.
 
 Propagation can take several hours up to a day. If you use Resend with a verified domain, do **not** delete its verification
 records — they are separate records that must stay in place. If you prefer, you can move the whole domain to Netlify DNS instead.
@@ -212,15 +229,15 @@ Netlify provisions a Let’s Encrypt certificate automatically once DNS points a
 If it does not appear, check *Domain management → HTTPS*.
 
 ```bash
-curl -I https://www.whiteelephantcreativestudio.com/        # expect: HTTP/2 200 and a strict-transport-security header
-curl -I http://www.whiteelephantcreativestudio.com/         # expect a redirect to https://
-curl -I https://whiteelephantcreativestudio.com/            # expect a redirect to https://www....
+curl -I https://www.whiteelephantcreativestudio.in/        # expect: HTTP/2 200 and a strict-transport-security header
+curl -I http://www.whiteelephantcreativestudio.in/         # expect a redirect to https://
+curl -I https://whiteelephantcreativestudio.in/            # expect a redirect to https://www.whiteelephantcreativestudio.in/
 ```
 
 In a browser, confirm the padlock, then repeat the production test (section 5) on the real domain. The security headers in
 `netlify.toml` (CSP, HSTS, no framing, nosniff) are served automatically; you can scan the site at https://securityheaders.com.
-The site’s canonical URLs, sitemap and structured data already point at `https://www.whiteelephantcreativestudio.com`.
-Submit `https://www.whiteelephantcreativestudio.com/sitemap.xml` in Google Search Console once the domain is live.
+The site’s canonical URLs, sitemap and structured data already point at `https://www.whiteelephantcreativestudio.in`.
+Submit `https://www.whiteelephantcreativestudio.in/sitemap.xml` in Google Search Console once the domain is live.
 
 ## 8. Change where leads are sent
 
@@ -229,7 +246,7 @@ Submit `https://www.whiteelephantcreativestudio.com/sitemap.xml` in Google Searc
 2. Redeploy (*Deploys → Trigger deploy*).
 3. Resend users still on the test sender (`onboarding@resend.dev`): the new address must be the Resend account owner’s own address;
    otherwise verify your domain first.
-4. Run `npm run send-test-lead -- --url https://www.whiteelephantcreativestudio.com` to confirm.
+4. Run `npm run send-test-lead -- --url https://www.whiteelephantcreativestudio.in` to confirm.
 
 The public contact email shown on the website is separate: edit `shared/business.js`.
 
@@ -237,7 +254,7 @@ The public contact email shown on the website is separate: edit `shared/business
 
 The form already has a honeypot and rate limiting. For stronger protection add Turnstile (free):
 
-1. https://dash.cloudflare.com → *Turnstile* → *Add widget* → add `www.whiteelephantcreativestudio.com`.
+1. https://dash.cloudflare.com → *Turnstile* → *Add widget* → add `www.whiteelephantcreativestudio.in` (and the bare `whiteelephantcreativestudio.in` if you want it too).
 2. In Netlify set `VITE_TURNSTILE_SITE_KEY` (public) and `TURNSTILE_SECRET_KEY` (secret). Redeploy.
 3. The widget appears above the submit button. Tokens are single-use and verified on the server.
 4. Note that `send-test-lead --url` is then rejected by design — use the website form or `--direct`.

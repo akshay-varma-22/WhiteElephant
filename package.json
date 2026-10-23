@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite",
     "dev:mock": "node scripts/dev-with-mock.mjs",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
     "verify": "npm run test && npm run build && npm run check:bundle",
     "preview": "vite preview",

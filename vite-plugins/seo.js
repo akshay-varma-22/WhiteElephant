@@ -1,6 +1,6 @@
 /**
  * SEO helpers, built only from verified business details (shared/business.js):
- *  - injects schema.org LocalBusiness JSON-LD into index.html (no ratings, reviews, hours or street address)
+ *  - injects schema.org LocalBusiness and WebSite JSON-LD into index.html (no ratings, reviews, hours or street address)
  *  - emits sitemap.xml and robots.txt at build time
  */
 import { BUSINESS, SERVICES_OFFERED } from '../shared/business.js';
@@ -11,10 +11,13 @@ export function buildJsonLd() {
     '@type': 'LocalBusiness',
     '@id': `${BUSINESS.url}/#business`,
     name: BUSINESS.name,
+    alternateName: BUSINESS.alternateNames,
     url: `${BUSINESS.url}/`,
     description:
       'Interior design, architecture and furniture design studio in Hyderabad, Telangana, India.',
     slogan: 'Thoughtful Spaces for Every Story.',
+    areaServed: { '@type': 'City', name: BUSINESS.address.locality },
+    knowsAbout: ['Interior design', 'Architecture', 'Furniture design', 'False ceiling design'],
     logo: `${BUSINESS.url}/icon-512.png`,
     image: `${BUSINESS.url}/og-image.jpg`,
     email: BUSINESS.email,
@@ -41,13 +44,27 @@ export function buildJsonLd() {
   };
 }
 
+/** The site itself (its name and other names), which search engines use for the name shown above the result. */
+export function buildWebsiteJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${BUSINESS.url}/#website`,
+    name: BUSINESS.name,
+    alternateName: BUSINESS.alternateNames,
+    url: `${BUSINESS.url}/`,
+    inLanguage: 'en-IN',
+    publisher: { '@id': `${BUSINESS.url}/#business` },
+  };
+}
+
 export function seo() {
   return {
     name: 'we-seo',
     transformIndexHtml(html, ctx) {
       if (!html.includes('<!--JSON_LD-->')) return html;
-      const json = JSON.stringify(buildJsonLd(), null, 2).replace(/</g, '\\u003c');
-      return html.replace('<!--JSON_LD-->', `<script type="application/ld+json">\n${json}\n    </script>`);
+      const script = (data) => `<script type="application/ld+json">\n${JSON.stringify(data, null, 2).replace(/</g, '\\u003c')}\n    </script>`;
+      return html.replace('<!--JSON_LD-->', `${script(buildJsonLd())}\n    ${script(buildWebsiteJsonLd())}`);
     },
     generateBundle() {
       const today = new Date().toISOString().slice(0, 10);

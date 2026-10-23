@@ -17,7 +17,8 @@ export default function Footer() {
         <a href="#home" aria-label="White Elephant Creative Studio — home" className="footer-logo-link">
           <Logo light className="footer-logo" />
         </a>
-        <p className="footer-copy">
+        {/* The year is written when the site is built and again in the visitor's browser; they differ only across New Year, which is harmless. */}
+        <p className="footer-copy" suppressHydrationWarning>
           © {year} {firstHalf}
           <br className="hidden max-[359px]:inline" /> {secondHalf}.<br className="sm:hidden" /> All rights reserved.
         </p>

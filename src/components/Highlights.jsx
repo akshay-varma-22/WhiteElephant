@@ -6,9 +6,9 @@ import { Building, Landmark, Smile, Users } from 'lucide-react';
  */
 const HIGHLIGHTS = [
   { icon: Landmark, value: '15+', lines: ['Years of', 'Experience'] },
-  { icon: Building, value: '400+', lines: ['Projects', 'Completed'] },
-  { icon: Smile, value: '100+', lines: ['Happy', 'Clients'] },
-  { icon: Users, value: '8+', lines: ['Team of', 'Experts'] },
+  { icon: Building, value: '500+', lines: ['Projects', 'Completed'] },
+  { icon: Smile, value: '400+', lines: ['Happy', 'Clients'] },
+  { icon: Users, value: '150+', lines: ['Team of', 'Experts'] },
 ];
 
 export default function Highlights() {

@@ -3,7 +3,7 @@ import Photo from './Photo.jsx';
 
 /**
  * "Spaces for Every Need": six arched photo cards, each with a round brown icon badge and the service name below.
- * The cards are informational only; visitors pick their services in the quotation form further down.
+ * The cards are informational only (they do not link anywhere).
  * (The short description is shown from large screens up; on phones it is kept for screen readers.)
  */
 export default function Services() {

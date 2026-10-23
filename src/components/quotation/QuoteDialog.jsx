@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Phone, X } from 'lucide-react';
 import { BUSINESS } from '../../config/site.js';
+import WhatsAppLink from '../WhatsAppLink.jsx';
 import QuotationForm from './QuotationForm.jsx';
 
 const QuoteContext = createContext({ openQuote: () => {} });
@@ -112,6 +113,8 @@ export function QuoteProvider({ children }) {
                   </li>
                 ))}
               </ul>
+              {/* The same WhatsApp button as in the header: opens a chat with the studio, message ready to send. */}
+              <WhatsAppLink className="quote-wa" />
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 # Project status — what is done, and what needs you
 
-_Last updated 17 October 2026. The latest version is live at https://exquisite-beijinho-3476dc.netlify.app (last deployed 18 Oct 2026): the three required quotation fields in a popup with in-field prompts, the new looping video, the project images without arrows, and the small footer (just the logo with the copyright line beside it, centred). Checked on the live site at desktop and phone width: page order, popup, prompts, required email (the API refuses a post without one), video served with range requests, the footer, no console errors. **Email delivery on the live site has not been tested** (it needs your Gmail App Password in Netlify; no test enquiry was sent to the live site)._
+_Last updated 21 October 2026. The latest version is live at **https://www.whiteelephantcreativestudio.in** (your own domain; the old netlify.app address redirects to it) (last deployed 21 Oct 2026, with your own pictures on all six service cards, the phone header without the WhatsApp icon and with a smaller “Get a Quote”, the search-engine improvements (see OWNER_GUIDE section 8), the WhatsApp buttons (header, quotation popup and the sticky phone bar), your newer Furniture picture, the new key figures, your own pictures on the Residential Interiors, Architecture and Furniture Design cards, the “Personalised furnishing” project, and the “Sample images” note removed; the video's “TO DESIGN” spelling fix went live on 19 Oct): the three required quotation fields in a popup with in-field prompts, the new looping video, the project images without arrows, and the small footer (just the logo with the copyright line beside it, centred). Checked on the live site at desktop and phone width: page order, popup, prompts, required email (the API refuses a post without one), video served with range requests, the footer, no console errors. **Email delivery is verified on the live site (21 Oct 2026):** the Gmail settings were saved in Netlify and the site redeployed; one labelled test lead (“Website Test Lead”, reference WE-CE697A) was posted to the live site and, as you confirmed, the email arrived in the lead inbox._
 
 ## ✅ Complete and tested (nothing for you to do)
 
@@ -11,35 +11,33 @@ _Last updated 17 October 2026. The latest version is live at https://exquisite-b
 | Logo and favicons from the supplied card (artwork unaltered; background made transparent) | Done — see note on original logo files below |
 | Quotation form with **three fields, all required**: full name, mobile number and email. Nothing else is asked (changed on 17 Oct 2026 at the owner’s request; the earlier version also asked for services, project type, location, area, budget, description and a call time, and for a while the email was optional). Indian and international numbers accepted. The popup is kept short enough not to need scrolling | Done |
 | Validation on the client **and** the server (same code), spam protection (honeypot, rate limits, optional CAPTCHA), loading state, duplicate-submission prevention, success only after the server confirms, helpful errors, values kept after failure | Done |
-| Lead email to `whiteelephantcreativestudio@gmail.com` (override with `LEAD_TO_EMAIL`, several addresses allowed): required subject format, all required fields, mobile-friendly HTML + plain text, reply-to the customer when they gave an email | Done. Verified against a mock Resend **and a real SMTP server over TCP**; not yet against Gmail itself (needs your app password) |
+| Lead email to `whiteelephantcreativestudio@gmail.com` (override with `LEAD_TO_EMAIL`, several addresses allowed): required subject format, all required fields, mobile-friendly HTML + plain text, reply-to the customer when they gave an email | Done. Verified against a mock Resend **and a real SMTP server over TCP**; **verified end to end on the live site on 21 Oct 2026:** a labelled test lead sent through Gmail from the live function reached the lead inbox (confirmed by the owner) |
 | Secrets only on the server; `.env.example` with placeholders; `.gitignore` for env files; build scanned for leaks | Done |
 | SEO: title, description, Open Graph/Twitter, canonical, semantic HTML, LocalBusiness data using only verified facts, sitemap, robots.txt, lazy-loaded responsive WebP images | Done |
+| **WhatsApp buttons** (21 Oct 2026, owner's request; **live since 21 Oct 2026**): a frameless brown WhatsApp logo left of “Get a Quote” in the header, beside the two numbers in the quotation popup, and between “Call us” and “Free Quotation” in the sticky phone bar. Each opens a WhatsApp chat with +91 76720 20294 in a new tab with a ready-to-send message (`https://wa.me/917672020294?text=…`; nothing is sent until the visitor presses Send). Number and message are set in `shared/business.js` and `src/config/site.js` — see [OWNER_GUIDE.md](OWNER_GUIDE.md) | Built; header fit checked 320–1920 px, bar and popup row at phone and desktop widths |
 | Data map: where enquiries are stored and how to delete them ([LEAD_DATA_MAP.md](LEAD_DATA_MAP.md)). **The privacy-policy page was removed at the owner's request on 17 Oct 2026** | Done |
-| 263 automated tests (187 unit/component/SMTP + 76 browser) + test report | Done — see [TEST_REPORT.md](TEST_REPORT.md) |
+| 323 automated tests (195 unit/component/SMTP + 128 browser) + test report | Done — see [TEST_REPORT.md](TEST_REPORT.md) |
 | Deployment, DNS, HTTPS and owner documentation | Done |
 
 ## 🔑 Needs you (credentials, DNS or approval)
 
 Do these in order. Details: [DEPLOYMENT.md](DEPLOYMENT.md).
 
-1. **Create a Gmail App Password** (recommended: for a *separate* website-sender Gmail account, because an app password gives
-   full access to that mailbox): turn on 2-Step Verification, then https://myaccount.google.com/apppasswords. Put
-   `MAIL_PROVIDER=gmail`, `GMAIL_USER` and `GMAIL_APP_PASSWORD` in your local `.env`. *(Prefer a send-only key? Use Resend instead — see DEPLOYMENT.md.)*
-2. **Prove delivery:** `npm run send-test-lead -- --direct`, then confirm the test email reached the studio inbox.
-   *This is the one required test (scenario 16) that has not been done; until you run it, real delivery is unverified.*
-3. **Deploy to Netlify** (GitHub or CLI), add `MAIL_PROVIDER`, `GMAIL_USER` and `GMAIL_APP_PASSWORD` (marked secret) in Netlify, redeploy.
-   *(Resend users: also verify the sending domain and set `MAIL_FROM`.)*
-4. **Production test** on the live URL (form + `send-test-lead --url …`), and check Netlify’s function log and Resend’s email log.
-5. **Point your domain** (`www` CNAME + apex ALIAS/A record), wait for DNS, confirm **HTTPS**, then repeat the production test on the real domain.
-6. **Fix the two typos written into your video** (“To desing”, “Spaces that feels like you”; send me the corrected file, see [OWNER_GUIDE.md](OWNER_GUIDE.md)), confirm you have the rights to everything shown in it (see `src/assets/photos/CREDITS.md`), and check that the **key highlights** (“15+ Years”, “400+ Projects”, “100+ Happy Clients”, “8+ Team”) are accurate, or replace them. **Add real client testimonials** (`src/data/testimonials.js`) to show that section.
+1. ~~**Create a Gmail App Password**~~ **Done 21 Oct 2026** (sender account, app password, and the recipient address `LEAD_TO_EMAIL` are set in Netlify; the password lives only there).
+2. ~~**Prove delivery**~~ **Done 21 Oct 2026:** test lead WE-CE697A sent from the live site arrived in the lead inbox (scenario 16 passed on production).
+3. ~~**Deploy to Netlify** and add the mail settings~~ **Done 21 Oct 2026.** If the sender's Google password is ever changed, Google cancels its app passwords: make a new one, update `GMAIL_APP_PASSWORD` in Netlify and redeploy.
+4. ~~**Production test**~~ **Done** with `send-test-lead --url …`. Worth repeating monthly, and once more after the custom domain is connected.
+5. ~~**Point your domain**~~ **Done 21 Oct 2026** (`whiteelephantcreativestudio.in` from GoDaddy, nameservers moved to Netlify, HTTPS on). **Still to do:** repeat the production test on the real domain, set up **Google Search Console** and **Google Business Profile** so Google finds the site (OWNER_GUIDE section 8).
+6. **One mistake is still written into your video** (“Spaces that feels like you” should be “feel”; the other one, “To desing”, was repainted as “To design” on 18 Oct 2026 — ask and the second can be repainted too, see [OWNER_GUIDE.md](OWNER_GUIDE.md)), confirm you have the rights to everything shown in it (see `src/assets/photos/CREDITS.md`), and check that the **key highlights** (“15+ Years”, “500+ Projects”, “400+ Happy Clients”, “150+ Team of Experts”) are accurate, or replace them. **Add real client testimonials** (`src/data/testimonials.js`) to show that section.
 7. **Replace the placeholder photos** with the studio’s own project photographs ([OWNER_GUIDE.md](OWNER_GUIDE.md)), and flip the “sample” flags.
 8. *(Optional)* Cloudflare Turnstile CAPTCHA; customer acknowledgement emails (work with Gmail straight away; Resend needs a verified domain).
 
 ## ⚠️ Things to know
 
 * **Placeholder photography.** The images are free-to-use Unsplash stock photos, credited in `src/assets/photos/CREDITS.md`. The site labels
-  them, uses generic titles, and a one-line note above the portfolio says they are placeholders (switch it off with `showPortfolioNotice: false` in
-  `src/config/site.js`; there are no labels on the images themselves). Some are computer-generated renders. None may be described as the studio’s work.
+  them and uses generic titles. The one-line “Sample images.” note at the end of Featured work, which said they are placeholders, was **switched off on
+  21 Oct 2026 at the owner’s request** (`showPortfolioNotice: false` in `src/config/site.js`; set it to `true` to bring it back), so nothing on the page
+  now says they are stock pictures; there are no labels on the images themselves either. Some are computer-generated renders. None may be described as the studio’s work.
 * **Logo quality.** The only logo supplied was a photo of a business card, so the web logo is a ~630 px crop. It looks good at the sizes used
   but would be sharper from your original logo file (SVG or large transparent PNG).
 * **The video intro** is your own “Interior Video”, converted for the web (H.264, no sound, under 1 MB). It plays by itself, silently, on a loop,

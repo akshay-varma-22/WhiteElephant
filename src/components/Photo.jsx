@@ -3,9 +3,11 @@ import { getPhotoSrc, getPhotoSrcSet } from '../lib/photos.js';
 
 /**
  * Responsive, lazy-loaded photo from src/assets/photos. Fills its (positioned) parent.
+ * `wide` ({ name, media, sizes }) gives a different picture for wider screens: the browser uses it when `media` matches (a <picture> element),
+ * and `name` is the picture for everything else (phones).
  * If the named photo is missing, a clearly-labelled tile is shown instead of a broken image.
  */
-export default function Photo({ name, alt, sizes = '100vw', priority = false, className = '', position, zoom }) {
+export default function Photo({ name, alt, sizes = '100vw', priority = false, className = '', position, zoom, wide }) {
   const srcSet = getPhotoSrcSet(name);
 
   if (!srcSet) {
@@ -37,7 +39,7 @@ export default function Photo({ name, alt, sizes = '100vw', priority = false, cl
     );
   }
 
-  return (
+  const image = (
     <img
       src={getPhotoSrc(name)}
       srcSet={srcSet}
@@ -52,5 +54,15 @@ export default function Photo({ name, alt, sizes = '100vw', priority = false, cl
         ...(zoom ? { '--zoom': zoom } : {}),
       }}
     />
+  );
+
+  // A different picture for wider screens (art direction): the <img> above is the phone picture, the <source> is used when its media query matches.
+  const wideSrcSet = wide ? getPhotoSrcSet(wide.name) : undefined;
+  if (!wideSrcSet) return image;
+  return (
+    <picture>
+      <source media={wide.media} srcSet={wideSrcSet} sizes={wide.sizes ?? sizes} />
+      {image}
+    </picture>
   );
 }

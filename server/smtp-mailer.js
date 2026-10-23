@@ -15,7 +15,7 @@ import nodemailer from 'nodemailer';
 import { BUSINESS } from '../shared/business.js';
 
 export const GMAIL_HOST = 'smtp.gmail.com';
-const MESSAGE_ID_DOMAIN = 'whiteelephantcreativestudio.com';
+const MESSAGE_ID_DOMAIN = 'whiteelephantcreativestudio.in';
 const DEDUPE_TTL_MS = 24 * 60 * 60 * 1000;
 const DEDUPE_MAX = 500;
 

@@ -78,7 +78,7 @@ function Lightbox({ items, index, onClose, onNavigate }) {
 }
 
 /** The three projects shown first when "All" is selected: one large and two smaller. Others appear under "View all projects". */
-const FEATURED_IDS = ['living', 'office', 'side-table'];
+const FEATURED_IDS = ['living', 'office', 'personalised-furnishing'];
 
 export default function Portfolio() {
   const [filter, setFilter] = useState('All');

@@ -1,6 +1,7 @@
 # Dependencies and build output
 node_modules/
 dist/
+dist-ssr/
 .netlify/
 
 # Secrets and local configuration — never commit these

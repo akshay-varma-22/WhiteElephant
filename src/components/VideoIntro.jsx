@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react';
 
-const SRC = '/videos/interior-loop.mp4';
-const POSTER = '/videos/interior-loop-poster.webp';
+// Raise this number whenever the video or its poster picture is replaced: browsers keep these files for a week, and a new number
+// makes every visitor fetch the new copy straight away instead of showing the old one (2 = the "TO DESIGN" spelling fix).
+const VIDEO_VERSION = 2;
+const SRC = `/videos/interior-loop.mp4?v=${VIDEO_VERSION}`;
+const POSTER = `/videos/interior-loop-poster.webp?v=${VIDEO_VERSION}`;
 const LABEL =
   'Studio showreel: a softly lit bedroom, a living room, floor plans with material samples and the White Elephant Creative Studio logo';
 
